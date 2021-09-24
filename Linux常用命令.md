@@ -2017,6 +2017,18 @@ sudo sed -e 's|^mirrorlist=|#mirrorlist=|g' \
 sudo yum makecache
 ```
 
+
+
+## 安全
+
+### pam
+
+
+
+
+
+
+
 # 权限
 
 ## chmod
@@ -2427,6 +2439,53 @@ umount /mnt/cdrom
 ```
 
 
+
+### 重新挂载
+
+```shell
+mount -o rw,remount /
+```
+
+
+
+### 文件系统变只读
+
+1. 首先可以尝试以`rw`模式重新挂载
+2. 如果失败的话，可以尝试使用`fsck`命令对设备进行修复
+
+例：
+
+```shell
+# root @ OpenWrt in ~ [14:40:52] C:16
+$ fsck.ext4 /dev/mmcblk0p2 
+e2fsck 1.45.6 (20-Mar-2020)
+rootfs contains a file system with errors, check forced.
+Pass 1: Checking inodes, blocks, and sizes
+Inode 7, i_size is 264302592, should be 268521472.  Fix<y>? yes
+Pass 2: Checking directory structure
+
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+Block bitmap differences:  -1837056 +(1838593--1838594)
+Fix<y>? yes
+Free blocks count wrong for group #4 (9776, counted=9775).
+Fix<y>? yes
+Free blocks count wrong for group #56 (32260, counted=32259).
+Fix<y>? yes
+Free blocks count wrong (3321770, counted=3331543).
+Fix<y>? yes
+Inode bitmap differences:  +17934
+Fix<y>? yes
+Free inodes count wrong for group #2 (2, counted=1).
+Fix<y>? yes
+Free inodes count wrong (821366, counted=821365).
+Fix<y>? yes
+
+rootfs: ***** FILE SYSTEM WAS MODIFIED *****
+rootfs: ***** REBOOT SYSTEM *****
+rootfs: 23435/844800 files (0.0% non-contiguous), 252457/3584000 blocks
+```
 
 
 
@@ -3211,3 +3270,6 @@ useradd mockbuild
     <summary>1111111111111111</summary>
     222222222222222222222
 </details>
+
+
+同步测试
