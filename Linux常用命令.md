@@ -401,7 +401,79 @@ make bzImage
 
 
 
-## 驱动集成到内核
+## 驱动/代码集成到内核
+
+例，将一个文件系统代码`testfs`添加到内核
+
+内核源码目录：`/root/rpmbuild/SOURCES/linux-2.6.32-754.el6`
+
+```shell
+# 将testfs拷贝到内核fs目录
+cp testfs /root/rpmbuild/SOURCES/linux-2.6.32-754.el6/fs -r
+
+cd  /root/rpmbuild/SOURCES/linux-2.6.32-754.el6/fs/testfs
+```
+
+
+
+给`testfs`添加配置文件`Kconfig`，例如：
+
+```shell
+config INFOSEC_FS
+        tristate "The Infosecfs filesystem"
+        default y
+        help
+          This is the next generation of the infosecfs filesystem.
+```
+
+修改`Makefile`文件如下：
+
+```shell
+obj-$(CONFIG_INFOSEC_FS) += infosecfs.o
+
+infosecfs-y     := crypto.o dentry.o file.o inode.o main.o message.o \
+                                        mmap.o process_ctrl.o read_write.o sm4.o \
+                                        super.o tools.o
+```
+
+
+
+额外编译选项：
+
+```shell
+EXTRA_CFLAGS += -Wno-error
+```
+
+
+
+
+
+```shell
+# 切换到fs目录
+cd ..
+
+vim Makefile
+```
+
+添加内容如下：
+
+```shell
+obj-$(CONFIG_INFOSEC_FS)                += testfs/
+```
+
+
+
+```shell
+vim Kconfig
+```
+
+添加内容如下：
+
+```shell
+source "fs/testfs/Kconfig"
+```
+
+![image-20211011141236642](images/Linux常用命令/image-20211011141236642.png)
 
 
 
@@ -495,6 +567,10 @@ mkinitramfs 2.6.32 -o /boot/initramfs.img
 
 
 其中`2.6.32`为`/lib/modules`下的目录名称。
+
+
+
+
 
 # qemu使用
 
@@ -2717,6 +2793,111 @@ ps -le
 ```shell
 ps -l
 ```
+
+
+
+## 定时任务
+
+crontab
+
+我们经常使用的是`crontab`命令是`cron table`的简写，它是`cron`的配置文件，也可以叫它作业列表，我们可以在以下文件夹内找到相关配置文件。
+
+- `/var/spool/cron/` 目录下存放的是每个用户包括root的crontab任务，每个任务以创建者的名字命名
+- `/etc/crontab` 这个文件负责调度各种管理和维护任务。
+- `/etc/cron.d/` 这个目录用来存放任何要执行的crontab文件或脚本。
+- 我们还可以把脚本放在`/etc/cron.hourly`、/etc/cron.daily、`/etc/cron.weekly`、`/etc/cron.monthly`目录中，让它每小时/天/星期、月执行一次。
+
+
+
+```shell
+crontab [-u username]　　　　//省略用户表表示操作当前用户的crontab
+    -e      (编辑工作表)
+    -l      (列出工作表里的命令)
+    -r      (删除工作作)
+```
+
+crontab的命令构成为 时间+动作，其时间有**分、时、日、月、周**五种，操作符有
+
+- ***** 取值范围内的所有数字
+- **/** 每过多少个数字
+- **-** 从X到Z
+- **，**散列数字
+
+### 实例
+
+**实例1：每1分钟执行一次myCommand**
+
+```shell
+* * * * * myCommand
+```
+
+**实例2：每小时的第3和第15分钟执行**
+
+```shell
+3,15 * * * * myCommand
+```
+
+**实例3：在上午8点到11点的第3和第15分钟执行**
+
+```shell
+3,15 8-11 * * * myCommand
+```
+
+**实例4：每隔两天的上午8点到11点的第3和第15分钟执行**
+
+```shell
+3,15 8-11 */2  *  * myCommand
+```
+
+**实例5：每周一上午8点到11点的第3和第15分钟执行**
+
+```shell
+3,15 8-11 * * 1 myCommand
+```
+
+**实例6：每晚的21:30重启smb**
+
+```shell
+30 21 * * * /etc/init.d/smb restart
+```
+
+**实例7：每月1、10、22日的4 : 45重启smb**
+
+```shell
+45 4 1,10,22 * * /etc/init.d/smb restart
+```
+
+**实例8：每周六、周日的1 : 10重启smb**
+
+```shell
+10 1 * * 6,0 /etc/init.d/smb restart
+```
+
+**实例9：每天18 : 00至23 : 00之间每隔30分钟重启smb**
+
+```shell
+0,30 18-23 * * * /etc/init.d/smb restart
+```
+
+**实例10：每星期六的晚上11 : 00 pm重启smb**
+
+```shell
+0 23 * * 6 /etc/init.d/smb restart
+```
+
+**实例11：每一小时重启smb**
+
+```shell
+0 */1 * * * /etc/init.d/smb restart
+```
+
+**实例12：晚上11点到早上7点之间，每隔一小时重启smb**
+
+```shell
+0 23-7/1 * * * /etc/init.d/smb restart
+```
+
+
 
 
 
