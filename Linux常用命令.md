@@ -1030,6 +1030,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 
 
+#### linux内核生成compile_commands.json
+
+高版本内核代码中scripts/clang-tools/gen_compile_commands.py，低版本内核下载这个并执行
+
+[scripts: add a tool to produce a compile_commands.json file · torvalds/linux@b302046 (github.com)](https://github.com/torvalds/linux/commit/b30204640192)
+
+
+
 ### 指定生成目录
 
 ```cmake
@@ -1138,6 +1146,46 @@ make -f <Makefile>
 
 
 
+## bear工具
+
+目前失败，发现好像依赖bash-compiletion，bear安装上报语法参数错误。
+
+例在`CentOS6.10`上安装
+
+```shell
+# 下载
+wget https://github.com/rizsotto/Bear/archive/refs/tags/2.4.4.tar.gz
+
+# 解压
+tar -zvxf 2.4.4.tar.gz
+
+cd Bear-2.4.4/
+
+mkdir build
+cd build/
+cmake ../
+make
+make install
+```
+
+显示如下，即安装完成：
+
+```shell
+[root@localhost build]# make install
+[100%] Built target ear
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /usr/local/share/doc/bear/COPYING
+-- Installing: /usr/local/share/doc/bear/README.md
+-- Installing: /usr/local/share/doc/bear/ChangeLog.md
+-- Installing: /usr/local/lib64/bear/libear.so
+-- Installing: /usr/local/bin/bear
+-- Installing: /usr/local/share/man/man1/bear.1
+-- Installing: /usr/local/share/bash-completion/completions/bear
+```
+
+
+
 # 调试
 
 
@@ -1182,7 +1230,7 @@ set substitute-path /root/rpmbuild/SOURCES/linux-2.6.32-754.el6/ /home/superman/
             "program": "${workspaceFolder}/vmlinux",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -1543,6 +1591,35 @@ apt remove [python3-apt 包名]
 
 
 
+## pacman
+
+```shell
+# 更新软件源
+pacman -Sy
+
+# 查找包
+pacman -Ss <packagename>
+
+# 查找已安装的包
+pacman -Qs <packagename>
+
+# 安装
+pacman -S <packagename>
+
+# 删除包，保留其全部已经安装的依赖关系
+pacman -R <packagename>
+
+# 删除包，删除其所有没有被其他已安装软件使用的依赖关系
+pacman -Rs <packagename>
+
+# 删除包，删除其所有依赖这个包的程序
+pacman -Rsc <packagename>
+```
+
+
+
+
+
 ## 通用查找软件路径
 
 ### 查看安装路径
@@ -1750,6 +1827,19 @@ Linux version 5.4.50-amd64-desktop (deepin@deepin-PC) (gcc version 8.3.0 (Uos 8.
 # 查看cpu相关信息
 cat /proc/cpuinfo
 ```
+
+
+
+## screenfetch
+
+```shell
+# 以arch为例
+pacman -S screenfetch
+```
+
+如图所示：
+
+![image-20211015102016337](images/Linux常用命令/image-20211015102016337.png)
 
 
 
@@ -2757,6 +2847,31 @@ tmpfs                tmpfs            512         0       512   0% /dev
 
 
 
+## rsync 文件同步
+
+### 安装
+
+```shell
+# Debian
+$ sudo apt-get install rsync
+
+# Red Hat
+$ sudo yum install rsync
+
+# Arch Linux
+$ sudo pacman -S rsync
+```
+
+**注意，传输的双方都必须安装 rsync。**
+
+例：
+
+```shell
+rsync -av ./ root@192.168.231.176:/root/rpmbuild/SOURCES/linux-2.6.32-754.el6/
+```
+
+
+
 # 进程
 
 ## 查看系统中所有的进程
@@ -2988,6 +3103,277 @@ root   pts/2    2014-05-14 19:48 (192.168.1.17)
 
 
 
+## netstat
+
+### 输出信息含义
+
+```shell
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address Foreign Address State
+tcp 0 2 210.34.6.89:telnet 210.34.6.96:2873 ESTABLISHED
+tcp 296 0 210.34.6.89:1165 210.34.6.84:netbios-ssn ESTABLISHED
+tcp 0 0 localhost.localdom:9001 localhost.localdom:1162 ESTABLISHED
+tcp 0 0 localhost.localdom:1162 localhost.localdom:9001 ESTABLISHED
+tcp 0 80 210.34.6.89:1161 210.34.6.10:netbios-ssn CLOSE
+
+Active UNIX domain sockets (w/o servers)
+Proto RefCnt Flags Type State I-Node Path
+unix 1 [ ] STREAM CONNECTED 16178 @000000dd
+unix 1 [ ] STREAM CONNECTED 16176 @000000dc
+unix 9 [ ] DGRAM 5292 /dev/log
+unix 1 [ ] STREAM CONNECTED 16182 @000000df
+```
+
+从整体上看，netstat的输出结果可以分为两个部分：
+
+一个是Active Internet connections，称为有源TCP连接，其中"Recv-Q"和"Send-Q"指%0A的是接收队列和发送队列。这些数字一般都应该是0。如果不是则表示软件包正在队列中堆积。这种情况只能在非常少的情况见到。
+
+另一个是Active UNIX domain sockets，称为有源Unix域套接口(和网络套接字一样，但是只能用于本机通信，性能可以提高一倍)。
+Proto显示连接使用的协议,RefCnt表示连接到本套接口上的进程号,Types显示套接口的类型,State显示套接口当前的状态,Path表示连接到套接口的其它进程使用的路径名。
+
+
+
+### 常见参数
+
+- -a (all)显示所有选项，默认不显示LISTEN相关
+- -t (tcp)仅显示tcp相关选项
+- -u (udp)仅显示udp相关选项
+- -n 拒绝显示别名，能显示数字的全部转化成数字。
+- -l 仅列出有在 Listen (监听) 的服務状态
+- -p 显示建立相关链接的程序名
+- -r 显示路由信息，路由表
+- -e 显示扩展信息，例如uid等
+- -s 按各个协议进行统计
+- -c 每隔一个固定时间，执行该netstat命令。
+
+**提示：LISTEN和LISTENING的状态只有用-a或者-l才能看到**
+
+
+
+### 实用命令实例
+
+#### 1.列出所有端口(包括监听和未监听的)
+
+**列出所有端口 netstat -a**
+
+```shell
+# netstat -a | more
+ Active Internet connections (servers and established)
+ Proto Recv-Q Send-Q Local Address           Foreign Address         State
+ tcp        0      0 localhost:30037         *:*                     LISTEN
+ udp        0      0 *:bootpc                *:*
+ 
+Active UNIX domain sockets (servers and established)
+ Proto RefCnt Flags       Type       State         I-Node   Path
+ unix  2      [ ACC ]     STREAM     LISTENING     6135     /tmp/.X11-unix/X0
+ unix  2      [ ACC ]     STREAM     LISTENING     5140     /var/run/acpid.socket
+```
+
+
+
+**列出所有 tcp 端口 netstat -at**
+
+```shell
+# netstat -at
+ Active Internet connections (servers and established)
+ Proto Recv-Q Send-Q Local Address           Foreign Address         State
+ tcp        0      0 localhost:30037         *:*                     LISTEN
+ tcp        0      0 localhost:ipp           *:*                     LISTEN
+ tcp        0      0 *:smtp                  *:*                     LISTEN
+ tcp6       0      0 localhost:ipp           [::]:*                  LISTEN
+```
+
+
+
+**列出所有 udp 端口 netstat -au**
+
+```shell
+# netstat -au
+ Active Internet connections (servers and established)
+ Proto Recv-Q Send-Q Local Address           Foreign Address         State
+ udp        0      0 *:bootpc                *:*
+ udp        0      0 *:49119                 *:*
+ udp        0      0 *:mdns                  *:*
+```
+
+
+
+#### 2.列出所有处于监听状态的sockets
+
+**只显示监听端口 netstat -l**
+
+```shell
+# netstat -l
+ Active Internet connections (only servers)
+ Proto Recv-Q Send-Q Local Address           Foreign Address         State
+ tcp        0      0 localhost:ipp           *:*                     LISTEN
+ tcp6       0      0 localhost:ipp           [::]:*                  LISTEN
+ udp        0      0 *:49119                 *:*
+```
+
+
+
+**只列出所有监听 tcp 端口 netstat -lt**
+
+```shell
+# netstat -lt
+ Active Internet connections (only servers)
+ Proto Recv-Q Send-Q Local Address           Foreign Address         State
+ tcp        0      0 localhost:30037         *:*                     LISTEN
+ tcp        0      0 *:smtp                  *:*                     LISTEN
+ tcp6       0      0 localhost:ipp           [::]:*                  LISTEN
+```
+
+
+
+**只列出所有监听 udp 端口 netstat -lu**
+
+```shell
+# netstat -lu
+ Active Internet connections (only servers)
+ Proto Recv-Q Send-Q Local Address           Foreign Address         State
+ udp        0      0 *:49119                 *:*
+ udp        0      0 *:mdns                  *:*
+```
+
+
+
+**只列出所有监听 UNIX 端口 netstat -lx**
+
+```shell
+# netstat -lx
+ Active UNIX domain sockets (only servers)
+ Proto RefCnt Flags       Type       State         I-Node   Path
+ unix  2      [ ACC ]     STREAM     LISTENING     6294     private/maildrop
+ unix  2      [ ACC ]     STREAM     LISTENING     6203     public/cleanup
+ unix  2      [ ACC ]     STREAM     LISTENING     6302     private/ifmail
+ unix  2      [ ACC ]     STREAM     LISTENING     6306     private/bsmtp
+```
+
+
+
+#### 3.显示每个协议的统计信息
+
+**显示所有端口的统计信息 netstat -s**
+
+```shell
+# netstat -s
+ Ip:
+ 11150 total packets received
+ 1 with invalid addresses
+ 0 forwarded
+ 0 incoming packets discarded
+ 11149 incoming packets delivered
+ 11635 requests sent out
+ Icmp:
+ 0 ICMP messages received
+ 0 input ICMP message failed.
+ Tcp:
+ 582 active connections openings
+ 2 failed connection attempts
+ 25 connection resets received
+ Udp:
+ 1183 packets received
+ 4 packets to unknown port received.
+ .....
+```
+
+
+
+**显示 TCP 或 UDP 端口的统计信息 netstat -st 或 -su**
+
+```shell
+# netstat -st 
+# netstat -su
+```
+
+
+
+#### 4.在netstat输出中显示PID和进程名称
+
+netstat -p 可以与其它开关一起使用，就可以添加 “PID/进程名称” 到 netstat 输出中，这样 debugging 的时候可以很方便的发现特定端口运行的程序。
+
+```shell
+# netstat -pt
+ Active Internet connections (w/o servers)
+ Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+ tcp        1      0 ramesh-laptop.loc:47212 192.168.185.75:www        CLOSE_WAIT  2109/firefox
+ tcp        0      0 ramesh-laptop.loc:52750 lax:www ESTABLISHED 2109/firefox
+```
+
+
+
+#### 5.在netstat输出中不显示主机，端口和用户名(host,port or user)
+
+当你不想让主机，端口和用户名显示，使用 netstat -n。将会使用数字代替那些名称。
+
+同样可以加速输出，因为不用进行比对查询。
+
+```shell
+# netstat -an
+```
+
+如果只是不想让这三个名称中的一个被显示，使用以下命令
+
+```shell
+# netsat -a --numeric-ports
+# netsat -a --numeric-hosts
+# netsat -a --numeric-users
+```
+
+
+
+#### 6.持续输出netstat信息
+
+netstat 将每隔一秒输出网络信息。
+
+```shell
+# netstat -c
+ Active Internet connections (w/o servers)
+ Proto Recv-Q Send-Q Local Address           Foreign Address         State
+ tcp        0      0 ramesh-laptop.loc:36130 101-101-181-225.ama:www ESTABLISHED
+ tcp        1      1 ramesh-laptop.loc:52564 101.11.169.230:www      CLOSING
+ tcp        0      0 ramesh-laptop.loc:43758 server-101-101-43-2:www ESTABLISHED
+ tcp        1      1 ramesh-laptop.loc:42367 101.101.34.101:www      CLOSING
+ ^C
+```
+
+
+
+#### 7.显示系统不支持的地址簇(Address Families)
+
+```shell
+netstat --verbose
+```
+
+在输出的末尾，会有如下的信息
+
+```shell
+netstat: no support for `AF IPX' on this system.
+netstat: no support for `AF AX25' on this system.
+netstat: no support for `AF X25' on this system.
+netstat: no support for `AF NETROM' on this system.
+```
+
+
+
+#### 8.显示核心路由信息 netstat -r
+
+```shell
+# netstat -r
+ Kernel IP routing table
+ Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
+ 192.168.1.0     *               255.255.255.0   U         0 0          0 eth2
+ link-local      *               255.255.0.0     U         0 0          0 eth2
+ default         192.168.1.1     0.0.0.0         UG        0 0          0 eth2
+```
+
+
+
+
+
+
+
 ## SSH命令
 
 ```shell
@@ -3115,6 +3501,44 @@ iptables -D INPUT 1
 
 
 
+## 不杀进程关闭套接字
+
+1. 查找要关闭的端口进程
+
+```shell
+netstat -np | grep $port
+```
+
+2. 在进程中找到套接安的文件描述符
+
+```shell
+lsof -nPp $pid
+```
+
+您将得到一个列表：进程名称，PID，用户，文件描述符，...一个连接字符串。
+
+找到用于连接的匹配的fileDescriptor编号。就像“ 97u”，意思是“ 97”。
+
+3. gdb附加进程
+
+```shell
+gdb attach $pid
+```
+
+4. 关闭套接字
+
+```shell
+call close($fileDescriptor)
+```
+
+5. 分离进程，退出gdb
+
+```shell
+quit
+```
+
+
+
 
 
 # 设备
@@ -3207,6 +3631,26 @@ fdisk -l
 	xfs_growfs /dev/mapper/centos-root
 	df -h
 ```
+
+
+
+## bash-completion 命令提示补全
+
+```shell
+https://github.com/scop/bash-completion/archive/refs/tags/2.11.tar.gz
+
+tar -zvxf 2.11.tar.gz 
+
+cd bash-completion-2.11/
+
+autoreconf -i  # if not installing from prepared release tarball
+./configure
+make           # GNU make required
+make check     # optional, requires python3 with pytest >= 3.6, pexpect
+make install   # as root
+```
+
+
 
 
 
@@ -3350,7 +3794,19 @@ substr : [shell-truncating-string]
 
 
 
-# 帮助
+# 帮助man
+
+## 安装
+
+```shell
+#Debian
+apt-get install manpages manpages-zh
+
+#CentOS
+yum install man-pages
+```
+
+
 
 ## manpages使用：
 1. 代表可以执行的命令
