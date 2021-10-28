@@ -2811,7 +2811,10 @@ scp -r ./* root@192.168.231.163:/root/go/src/github.com/DWBC-ConPeer/crypto-gm/
 tail -f -n 100 <文件名>
 ```
 
-## 查找文件
+## 查找文件/内容
+
+**查找指定文件**
+
 ```shell
 find <指定目录> <指定条件> <指定动作>
 	- <指定目录>： 所要搜索的目录及其所有子目录。默认为当前目录。
@@ -2820,7 +2823,8 @@ find <指定目录> <指定条件> <指定动作>
 find /usr/include -name "ioctl.h" -ls
 ```
 
-## 查看包含指定内容的文件
+**查找包含指定内容的文件**
+
 ```shell
 grep -r "被查找的字符串" /dir
 ```
