@@ -783,7 +783,7 @@ yum install debootstrap
 qemu-img create -f qcow2 centos.qcow2 5G
 
 # 通过安装镜像安装到硬盘
-qemu-system-x86_64 -cdrom CentOS-6.10-x86_64-minimal.iso -drive file=centos.qcow2,format=qcow2
+qemu-system-x86_64 -cdrom CentOS-6.10-x86_64-minimal.iso -drive file=centos.qcow2,format=qcow2 -2
 
 # 安装完成后，进入系统查看/etc/fstab根目录挂载的设备，如/dev/sda，并从/boot/grub/grub.cfg中拿到启动参数
 # 并将/boot/initramfs拿出来
@@ -1532,6 +1532,9 @@ yum search xxx
 
 # 安装软件包
 yum install java-1.8.0-openjdk-devel
+
+# 卸载软件
+yum remove xxx
 ```
 
 
@@ -2196,6 +2199,46 @@ sudo yum makecache
 
 
 # 权限
+
+
+
+## 文件权限(见文件 -- 文件权限章节)
+
+
+
+
+
+## uid
+
+下面分别用RUID, EUID,SUID来表示实际用户ID，有效用户ID，设置用户ID。另外用户ID是个整型数，为了说明方便真接使用了用户名来代表不同的UID。先解释一下这几个ID的作用：
+
+- RUID, 用于在系统中标识一个用户是谁，当用户使用用户名和密码成功登录后一个UNIX系统后就唯一确定了他的RUID.
+- EUID, 用于系统决定用户对系统资源的访问权限，通常情况下等于RUID。
+- SUID，用于对外权限的开放。跟RUID及EUID是用一个用户绑定不同，它是跟文件而不是跟用户绑定。
+
+说明SUID的时候很多书都简略的提了一下passwd这个程序，下面就拿这个例子来分析。我们知道linux系统的密码都存在了/etc/shadow这个文件里。这个文件是如此的重要，在做任何修改之前最好先备份一下。查看/etc/shadow文件的属性如下：
+
+```shell
+[root@localhost ~]# ll /etc/shadow
+
+-r——– 1 root root 1144 Jul 20 22:33 /etc/shadow
+```
+
+从上可以看出/etc/shadow文件是一个属于root用户及root组的文件，并且只有EUID为root的用户具有读的权限，其它所有EUID都没有任何权限。当你在steve用户（EUID此时也为steve）的shell下试图用vim打开这个文件时会提示权限不允许。至于连root用户也只有读的权限我猜是为了不鼓励root用户使用vim类的编辑器去直接修改它，而要采用passwd命令来修改这个文件。如果你非要直接修改它，那么你可以使用chmod命令修改为属性为root可写，然后就可以修改了。
+
+用过UNIX系统的人都知道，任何一个用户都可以使用passwd这个命令来得新设定自己的密码。但从上面已经知道，非root用记是无法读这个文件的，那么普通用户是如何做到修改这个文件的呢？我们知道passwd这个命令实际执行的程序是/usr/bin/passwd, 查看这个文件属性如下：
+
+```shell
+-r-s–x–x 1 root root 21944 Feb 12  2006 /usr/bin/passwd；
+```
+
+对应文件存取标志的s位就是通常说的SUID位，另外可以看到所有用户都有执行的这个程序权力。当steve用户执行passwd命令的时候。Shell会fork出一个子进程，此时进程的EUID还是steve，然后exec程序/usr/bin/passwd。exec会根据/usr/bin/passwd的SUID位会把进程的EUID设成root,  此时这个进程都获得了root权限, 得到了读写/etc/shadow文件的权限, 从而steve用户可完成密码的修改。 exec退出后会恢复steve用户的EUID为steve.这样就不会使steve用户一直拥有root权限。
+
+
+
+个人理解：uid是实际用户id，每个文件都会有一个uid； 用户在登录的过程中，使用的是uid。用户在执行文件时，pID对应的uid就是用户的uid；  euid是用户的有效id，在执行文件的时候，由于权限的问题，某个进程的uid需要‘变为’其他用户才可以执行，这时‘变身’后的用户id及就是euid。 在没有‘变身’的情况下，euid=uid. suid标示一个文件可以被另一个文件使用‘变身’的策略使用它的权限 ，比如上面的/etc/passwd 文件，其他用户只有执行的权限，但是没有读取得权限，其他非root用户在执行的时候，由于文件设置了suid，则执行过程中euid可以被更改为root,这样就可以访问了 。
+
+
 
 ## chmod
 
@@ -2867,8 +2910,60 @@ $ sudo pacman -S rsync
 例：
 
 ```shell
-rsync -av ./ root@192.168.231.176:/root/rpmbuild/SOURCES/linux-2.6.32-754.el6/
+rsync -av /root/rpmbuild/SOURCES/linux-2.6.32-754.el6/ root@192.168.231.176:/root/rpmbuild/SOURCES/linux-2.6.32-754.el6/
+
+rsync -av root@192.168.231.176:/root/rpmbuild/SOURCES/linux-2.6.32-754.el6/ /root/rpmbuild/SOURCES/linux-2.6.32-754.el6/
 ```
+
+
+
+## dd生成文件
+
+```shell
+dd if=/dev/zero of=test.txt bs=1 count=4096
+```
+
+
+
+
+
+## lsof
+
+```shell
+yum install lsof
+```
+
+
+
+
+
+## 文件权限
+
+```shell
+[root@www /]# ls -l
+total 64
+dr-xr-xr-x   2 root root 4096 Dec 14  2012 bin
+dr-xr-xr-x   4 root root 4096 Apr 19  2012 boot
+……
+```
+
+
+
+![img](images/Linux常用命令/file-llls22.jpg)
+
+每个文件的属性由左边第一部分的 10 个字符来确定（如下图）。
+
+![363003_1227493859FdXT](images/Linux常用命令/363003_1227493859FdXT.png)
+
+从左至右用 **0-9** 这些数字来表示。
+
+文件类型：
+
+- 当为 **d** 则是目录
+- 当为 **-** 则是文件；
+- 若是 **l** 则表示为链接文档(link file)；
+- 若是 **b** 则表示为装置文件里面的可供储存的接口设备(可随机存取装置)；
+- 若是 **c** 则表示为装置文件里面的串行端口设备，例如键盘、鼠标(一次性读取装置)。
 
 
 
@@ -3555,6 +3650,88 @@ lsusb
 
 
 
+# Crypto
+
+## 查看内核中支持的算法套件
+
+```shell
+root@kerneldev:~/rpmbuild/SOURCES/linux-2.6.32-754.el6# cat /proc/crypto | grep name
+name         : ecdh
+name         : crct10dif
+name         : crc32
+name         : ghash
+name         : __ghash
+name         : gcm(aes)
+name         : rfc4106(gcm(aes))
+name         : __gcm(aes)
+name         : __rfc4106(gcm(aes))
+name         : xts(aes)
+name         : ctr(aes)
+name         : cbc(aes)
+name         : ecb(aes)
+name         : __xts(aes)
+name         : __ctr(aes)
+name         : __cbc(aes)
+name         : __ecb(aes)
+name         : aes
+name         : pkcs1pad(rsa,sha512)
+name         : hmac(sha256)
+name         : hmac(sha1)
+name         : jitterentropy_rng
+name         : crc32c
+name         : ghash
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : stdrng
+name         : lzo-rle
+name         : lzo-rle
+name         : lzo
+name         : lzo
+name         : crct10dif
+name         : crc32c
+name         : zlib-deflate
+name         : deflate
+name         : deflate
+name         : aes
+name         : sha384
+name         : sha512
+name         : sha224
+name         : sha256
+name         : sha1
+name         : md5
+name         : ecb(cipher_null)
+name         : digest_null
+name         : compress_null
+name         : cipher_null
+name         : rsa
+name         : dh
+```
+
+
+
+
+
+
+
 # 配置
 
 
@@ -3892,12 +4069,46 @@ useradd mockbuild
 
 
 
-## 5.Linux切换su很慢
+## 5.Linux切换su很慢(未解决)
 
 ```shell
 ```
 
 
+
+## 6.CentOS中文乱码(没测试)
+
+```shell
+# 查看支持语言包
+locale -a | grep zh
+
+# 没有的话 安装
+yum install kde-l10n-Chinese
+
+# 配置i18n和locale.conf文件
+vim /etc/sysconfig/i18n
+
+LANG="zh_CN.UTF-8"
+LC_ALL="zh_CN.UTF-8"
+
+source /etc/sysconfig/i18n
+
+vim /etc/locale.conf
+
+LANG="zh_CN.UTF-8"
+```
+
+
+
+
+
+## 7.Vim为什么可以写入只读文件
+
+主要是vim写入文件的时候会有一个中间文件，当写入并保存的时候，会将原来的文件删除，并将中间文件改名。
+
+
+
+原因是因为当前用户对文件所在目录有写权限，去掉目录用户的写权限之后，vim便不可写入文件了。
 
 
 
