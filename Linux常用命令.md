@@ -980,6 +980,12 @@ qemu-system-x86_64 \
 
 
 
+## 网络配置
+
+
+
+
+
 
 
 # 编译
@@ -3162,6 +3168,78 @@ crontab的命令构成为 时间+动作，其时间有**分、时、日、月、
 ```shell
 ifconfig
 ```
+
+
+
+## Bridge
+
+同 tap/tun、veth-pair 一样，Bridge 也是一种**虚拟网络设备**，所以具备虚拟网络设备的所有特性，比如可以配置 IP、MAC 等。
+
+除此之外，Bridge 还是一个交换机，**具有交换机所有的功能。**
+
+对于普通的网络设备，就像一个管道，只有两端，数据从一端进，从另一端出。而 **Bridge 有多个端口，数据可以从多个端口进，从多个端口出。**
+
+Bridge 的这个特性让它可以接入其他的网络设备，比如物理设备、虚拟设备、VLAN 设备等。Bridge 通常充当主设备，其他设备为从设备，这样的效果就等同于物理交换机的端口连接了一根网线。比如下面这幅图通过 Bridge 连接两个 VM 的 tap 虚拟网卡和物理网卡 eth0。
+
+![img](images/Linux常用命令/431521-20190314124636068-1503136548.png)
+
+### VM 同主机通信
+
+以这个图来简单说明下，借助 Bridge 来完成同主机两台 VM 的之间的通信流程。
+
+首先准备一个 centos 或 ubuntu 虚拟机，然后创建一个 bridge：
+
+```shell
+ip link add br0 type bridge
+ip link set br0 up
+```
+
+然后通过 `virt-manager` 创建两个 kvm 虚拟机：kvm1 和 kvm2（前提得支持嵌套虚拟化），将它们的 vNIC 挂到 br0 上，如下图：
+
+![img](images/Linux常用命令/431521-20190314124650453-721976421.png)
+
+
+
+kvm 虚机会使用 tap 设备作为它的虚拟网卡，我们验证下：
+
+```shell
+# ps -ef | grep kvm1
+libvirt+      3549     1  87 ?        00:22:09 qemu-system-x86_64 -enable-kvm -name kvm1 ... -netdev tap,fd=26,id=hostnet0,vhost=on,vhostfd=28 ...
+```
+
+可以看到，其中网络部分参数，`-netdev tap,fd=26` 表示的就是连接主机上的 tap 设备。
+
+创建的 fd=26 为读写 `/dev/net/tun` 的文件描述符。
+
+使用 `lsof -p 3549` 验证下：
+
+```shell
+# lsof -p 3549
+COMMAND    PID USER   FD      TYPE             DEVICE    SIZE/OFF     NODE NAME
+...
+qemu-system 3549  libvirt-qemu   26u      CHR             10,200         0t107    135 /dev/net/tun
+...
+```
+
+可以看到，PID 为 3549 的进程打开了文件 `/dev/net/tun`，分配的文件描述符 fd 为 26。
+
+因此，我们可以得出以下结论：在 kvm 虚机启动时，会向内核注册 tap 虚拟网卡，同时打开设备文件 `/dev/net/tun`，拿到文件描述符 fd，然后将 fd 和 tap 关联，tap 就成了一端连接着用户空间的 qemu-kvm，一端连着主机上的 bridge 的端口，促使两者完成通信。
+
+### Bridge 常用使用场景
+
+Bridge 设备通常就是结合 tap/tun、veth-pair 设备用于虚拟机、容器网络里面。这两种网络，在数据传输流程上还有些许不同，我们简单来看下：
+
+首先是虚拟机网络，虚拟机一般通过 tap/tun 设备将虚拟机网卡同宿主机里的 Bridge 连接起来，完成同主机和跨主机的通信。如下图所示：
+
+![img](images/Linux常用命令/431521-20190314124732905-488704574.png)
+
+虚拟机发出的数据包通过 tap 设备先到达 br0，然后经过 eth0 发送到物理网络中，数据包不需要经过主机的的协议栈，效率是比较高的。
+
+其次是容器网络（容器网络有多种引申的形式，这里我们只说 Bridge 网络），容器网络和虚拟机网络类似，不过一般是使用 veth-pair 来连接容器和主机，因为在主机看来，容器就是一个个被隔离的 namespace，用 veth-pair 更有优势。如下图所示：
+
+![img](images/Linux常用命令/431521-20190314124742281-1232457118.png)
+
+容器的 Bridge 网络通常配置成内网形式，要出外网需要走 NAT，所以它的数据传输不像虚拟机的桥接形式可以直接跨过协议栈，而是必须经过协议栈，通过 NAT 和 ip_forward 功能从物理网卡转发出去，因此，从性能上看，Bridge 网络虚拟机要优于容器。
 
 
 
