@@ -2698,6 +2698,20 @@ rootfs: 23435/844800 files (0.0% non-contiguous), 252457/3584000 blocks
 
 
 
+### -t参数解读
+
+mount和umount支持文件系统子类型。子类型由“.subtype”后缀定义。例如'fuse.sshfs'。
+
+```c
+execl("/bin/mount", "mount", "-i", "--no-canonicalize", "-t", "ecryptfs", fullpath_source, fullpath_target, "-o", opts, NULL);
+```
+
+
+
+> **-i, --internal-only**
+>
+> Don't call the /sbin/mount.<filesystem> helper even if it exists.
+
 
 
 ## tree命令
@@ -2805,11 +2819,40 @@ scp -r ./* root@192.168.231.163:/root/go/src/github.com/DWBC-ConPeer/crypto-gm/
 
 
 
-## 查看文件
+## 查看文件内容
 
 ```shell
 tail -f -n 100 <文件名>
 ```
+
+
+
+## 查看文件的inode number
+
+```shell
+ls -li
+```
+
+输出如下：
+
+```shell
+root@kerneldev:~/testalg/sm4# ls -li
+total 88
+2100384 -rw------- 1 root root   287 10月 27 16:08 Makefile
+2100394 -rw-r--r-- 1 root root    33 10月 27 16:08 modules.order
+2100397 -rw-r--r-- 1 root root     0 10月 27 16:08 Module.symvers
+2100386 -rw------- 1 root root  7702 10月 27 16:08 sm4_generic.c
+2100399 -rw-r--r-- 1 root root 27064 10月 27 16:08 sm4_generic.ko
+2100390 -rw-r--r-- 1 root root    33 10月 27 16:08 sm4_generic.mod
+2100396 -rw-r--r-- 1 root root   819 10月 27 16:08 sm4_generic.mod.c
+2100400 -rw-r--r-- 1 root root  3200 10月 27 16:08 sm4_generic.mod.o
+2100391 -rw-r--r-- 1 root root 24800 10月 27 16:08 sm4_generic.o
+2100385 -rw------- 1 root root   284 10月 27 16:08 sm4.h
+```
+
+
+
+
 
 ## 查找文件/内容
 
