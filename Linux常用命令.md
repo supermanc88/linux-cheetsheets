@@ -982,9 +982,75 @@ qemu-system-x86_64 \
 
 ## 网络配置
 
+### 安装软件
+
+```shell
+apt-get install bridge-utils        # 虚拟网桥工具
+apt-get install uml-utilities       # UML（User-mode linux）工具
+```
 
 
 
+### 创建网桥
+
+```shell
+ifconfig <你的网卡名称(能上网的那张)> down    # 首先关闭宿主机网卡接口
+brctl addbr br0                     # 添加一座名为 br0 的网桥
+brctl addif br0 <你的网卡名称>        # 在 br0 中添加一个接口
+brctl stp br0 off                   # 如果只有一个网桥，则关闭生成树协议
+brctl setfd br0 1                   # 设置 br0 的转发延迟
+brctl sethello br0 1                # 设置 br0 的 hello 时间
+ifconfig br0 0.0.0.0 promisc up     # 启用 br0 接口
+ifconfig <你的网卡名称> 0.0.0.0 promisc up    # 启用网卡接口
+dhclient br0                        # 从 dhcp 服务器获得 br0 的 IP 地址
+brctl show br0                      # 查看虚拟网桥列表
+brctl showstp br0                   # 查看 br0 的各接口信息
+```
+
+当配置完成之后执行 ifconfig 结果应该如下：
+
+![image-20211029232351370](images/Linux常用命令/image-20211029232351370.png)
+
+此时网桥已经得到了 IP，并且能够连接网络的网卡 enp0s5 也加入了网桥，此时我们的网桥状态大致是这种情况
+
+![image-20211029232401143](images/Linux常用命令/image-20211029232401143.png)
+
+桥的一端连接到 enp0s5，我们只需要再把另一端接到 QEMU 虚拟机(准确的说是 VLAN )上面就可以了！
+
+
+
+### 创建tap设备
+
+创建一个TAP设备，作为QEMU一端的接口
+
+```shell
+tunctl -t tap0 -u root              # 创建一个 tap0 接口，只允许 root 用户访问
+brctl addif br0 tap0                # 在虚拟网桥中增加一个 tap0 接口
+ifconfig tap0 0.0.0.0 promisc up    # 启用 tap0 接口
+brctl showstp br0                   # 显示 br0 的各个接口
+```
+
+此时网桥的信息应该是：
+
+![image-20211029232540507](images/Linux常用命令/image-20211029232540507.png)
+
+
+
+这样就相当于把两张网卡通过网桥连起来了：
+
+![image-20211029232615062](images/Linux常用命令/image-20211029232615062.png)
+
+
+
+### 启动qemu
+
+```shell
+sudo qemu-system-mipsel -M malta -kernel vmlinux-3.2.0-4-4kc-malta -hda debian_squeeze_mipsel_standard.qcow2 -append "root=/dev/sda1 console=tty0" -nographic -net nic -net tap,ifname=tap0,script=no,downscript=no
+```
+
+特别说明一下参数含义：-net nic 表示希望 QEMU 在虚拟机中创建一张虚拟网卡，-net tap 表示连接类型为 TAP，并且指定了网卡接口名称(就是刚才创建的 tap0，相当于把虚拟机接入网桥)。
+
+script 和 downscript 两个选项的作用是告诉 QEMU 在启动系统的时候是否调用脚本自动配置网络环境，如果这两个选项为空，那么 QEMU 启动和退出时会自动选择第一个不存在的 tap 接口(通常是 tap0)为参数，调用脚本 /etc/qemu-ifup 和 /etc/qemu-ifdown。由于我们已经配置完毕，所以这两个参数设置为 no 即可。
 
 
 
@@ -3165,11 +3231,28 @@ crontab的命令构成为 时间+动作，其时间有**分、时、日、月、
 
 
 # 网络
+
+## ifconfig
+
 ```shell
-ifconfig
+ifconfig [-a] [-v] [-s] <interface> [[<AF>] <address>]
+[add <address>[/<prefixlen>]]		# 设置interface的地址
+[del <address>[/<prefixlen>]]		# 删除interface的地址
+[[-]broadcast [<address>]]  [[-]pointopoint [<address>]] 	# 设置广播地址
+[netmask <address>]  [dstaddr <address>]  [tunnel <address>] # 设置interface的子网掩码 
+[outfill <NN>] [keepalive <NN>]
+[hw <HW> <address>]  [mtu <NN>]
+[[-]trailers]  [[-]arp]  [[-]allmulti]
+[multicast]  [[-]promisc]
+[mem_start <NN>]  [io_addr <NN>]  [irq <NN>]  [media <type>]
+[txqueuelen <NN>]
+[name <newname>]		# 修改interfac的名称
+[[-]dynamic]
+[up|down] ...		# 启动或关闭指定的interface
 ```
 
-
+- promisc 启用或禁用混杂模式，如果开启，interface将接收网络上的所有数据包
+- tunnel 建立一个IPv4与IPv6的隧道
 
 ## Bridge
 
