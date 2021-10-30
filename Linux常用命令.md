@@ -548,7 +548,7 @@ sudo update-grub
 
 
 
-## 根文件系统
+## 创建根文件系统
 
 ### CentOS/Fedora
 
@@ -3323,6 +3323,175 @@ Bridge 设备通常就是结合 tap/tun、veth-pair 设备用于虚拟机、容�
 ![img](images/Linux常用命令/431521-20190314124742281-1232457118.png)
 
 容器的 Bridge 网络通常配置成内网形式，要出外网需要走 NAT，所以它的数据传输不像虚拟机的桥接形式可以直接跨过协议栈，而是必须经过协议栈，通过 NAT 和 ip_forward 功能从物理网卡转发出去，因此，从性能上看，Bridge 网络虚拟机要优于容器。
+
+
+
+### 创建网桥
+
+```shell
+apt-get install bridge-utils        # 虚拟网桥工具
+apt-get install uml-utilities       # UML（User-mode linux）工具
+
+ifconfig <你的网卡名称(能上网的那张)> down    # 首先关闭宿主机网卡接口
+brctl addbr br0                     # 添加一座名为 br0 的网桥
+brctl addif br0 <你的网卡名称>        # 在 br0 中添加一个接口
+brctl stp br0 off                   # 如果只有一个网桥，则关闭生成树协议
+brctl setfd br0 1                   # 设置 br0 的转发延迟
+brctl sethello br0 1                # 设置 br0 的 hello 时间
+ifconfig br0 0.0.0.0 promisc up     # 启用 br0 接口
+ifconfig <你的网卡名称> 0.0.0.0 promisc up    # 启用网卡接口
+dhclient br0                        # 从 dhcp 服务器获得 br0 的 IP 地址
+brctl show br0                      # 查看虚拟网桥列表
+brctl showstp br0                   # 查看 br0 的各接口信息
+```
+
+
+
+### 删除网桥
+
+```shell
+# 删除网桥上的设备
+brctl delif br0 tap0
+brctl delif br0 ens33
+
+# 删除网桥
+brctl delbr br0
+```
+
+
+
+## 虚拟网卡设备tun/tap
+
+[理解Linux虚拟网卡设备tun/tap的一切 | 骏马金龙 (junmajinlong.com)](https://www.junmajinlong.com/virtual/network/all_about_tun_tap/)
+
+tun、tap是Linux提供的两种可收发数据的虚拟网卡设备。
+
+tun、tap作为虚拟网卡，除了不具备物理网卡的硬件功能外，它们和物理网卡的功能是一样的，此外tun、tap负责在内核网络协议栈和用户空间之间传输数据。
+
+### tun或tap的区别
+
+tun和tap都是虚拟网卡设备，但是：
+
+- tun是三层设备，其封装的外层是IP头
+- tap是二层设备，其封装的外层是以太网帧(frame)头
+- tun是PPP点对点设备，没有MAC地址
+- tap是以太网设备，有MAC地址
+- tap比tun更接近于物理网卡，可以认为，tap设备等价于去掉了硬件功能的物理网卡
+
+这意味着，如果提供了用户空间的程序去收发tun/tap虚拟网卡的数据，所收发的内容是不同的：
+
+- 收发tun设备的用户程序，只能间接提供封装和解封数据包的IP头的功能
+
+- 收发tap设备的用户程序，只能间接提供封装和解封数据包的帧头的功能
+
+- 注意，此处用词是【收发数据】而非【处理数据】，是【间接提供】而非【直接提供】，因为在不绕过内核网络协议栈的情况下，读写虚拟网卡的用户程序是不能封装和解封数据的，只有内核的网络协议栈才能封装和解封数据。如果不理解，请看通过openvpn分析tun实现隧道的数据流程
+
+  
+
+前面说过，虚拟网卡的两个主要功能是：
+
+- 连接其它设备(虚拟网卡或物理网卡)和虚拟交换机(bridge)
+- 提供用户空间程序去收发虚拟网卡上的数据
+
+基于这两个功能，**tap设备通常用来连接其它网络设备(它更像网卡)，tun设备通常用来结合用户空间程序实现再次封装。**换句话说，tap设备通常接入到虚拟交换机(bridge)上作为局域网的一个节点，tun设备通常用来实现三层的ip隧道。
+
+但tun/tap的用法是灵活的，只不过上面两种使用场景更为广泛。例如，除了可以使用tun设备来实现ip层隧道，使用tap设备实现二层隧道的场景也颇为常见。
+
+### 创建并使用tun/tap设备
+
+使用命令创建tun、tap设备的方式有多种，比如`openvpn --mktun`、`ip tuntap`、`tunctl`等。
+
+```shell
+$ openvpn --mktun --dev tun0
+$ openvpn --mktun --dev tap0
+
+$ ip tuntap add dev tun0 mode tun
+$ ip tuntap add dev tap0 mode tap
+
+$ tunctl -t tap0      # 默认创建tap设备
+$ tunctl -n -t tap0
+```
+
+可使用ifconfig等工具查看这些虚拟网络设备。
+
+```shell
+$ ifconfig -a
+# 注意tap0是以太网设备，具有MAC地址
+tap0: flags=4098<BROADCAST,MULTICAST>  mtu 1500
+   ether 0e:38:5b:10:e9:1c  txqueuelen 1000  (Ethernet)
+......
+
+# 注意tun0是POINTOPOINT设备，没有MAC地址
+tun0: flags=4241<UP,POINTOPOINT,NOARP,MULTICAST>  mtu 1500
+   inet 10.10.10.10  netmask 255.255.255.255  destination 10.10.10.10
+   unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 500  (UNSPEC)
+......
+```
+
+可以为tun/tap分配IP地址或配置其它属性，例如：
+
+```shell
+ifconfig tun0 10.0.0.33 up
+
+# 或者
+ip link set tun0 up
+ip addr add 10.0.0.33/24 dev tun0
+```
+
+### tun/tap的创建细节
+
+下面介绍一些创建tun、tap的底层细节。
+
+创建tun/tap设备时，内核会自动为tun、tap提供网卡驱动程序，使其能正常工作。此外，内核还会为tun、tap提供字符设备驱动，使其能够在用户空间和内核空间传递数据。
+
+其实，tun和tap都是基于/dev/net/tun字符设备所创建(或称为克隆)的虚拟网络设备：
+
+```shell
+$ ls -l /dev/net/tun
+crw-rw-rw-. 1 root root ... /dev/net/tun
+```
+
+Linux中创建tun、tap时，要求打开/dev/net/tun设备，打开后会返回一个文件描述符fd，再使用ioctl()在此fd上注册tun或tap设备，注册后将自动创建tunX或tapX设备(这取决于ioctl()中注册的设备类型)，其中X是一个从0开始的正整数。创建成功后，在ifconfig等命令中就可以看到tunX或tapX。
+
+在使用ioctl()注册时，还可以指定创建的tun/tap设备是否持久保留，如果不持久保留，那么程序退出或关闭fd，都会自动移除对应的tun/tap设备。比如tunctl、ip、openvpn等工具创建的都是持久化的tun/tap设备，即使这些程序退出了，虚拟网卡设备也仍然保留。
+
+注册tun或tap之后，可使用fd来读写tunX或tapX设备文件。
+
+用户程序读写tunX或tapX设备，即表示虚拟网卡收发数据(在用户空间和内核网络协议栈之间传输数据)：
+
+- 读虚拟网卡表示从虚拟网卡收，即读取来自内核网络协议栈的数据，这些数据是内核决策后决定要从tun/tap设备发送出去的数据，一般是已经被内核封装过的数据
+- 写虚拟网卡表示向虚拟网卡发，即用户空间程序将数据写入网卡tun/tap，内核网络协议栈将收到这些数据并对数据进行解封(就像外界数据经过物理网卡后进入内核协议栈一样)
+
+程序从虚拟网卡中读数据没什么可讲的，但写虚拟网卡却有必要一提。
+
+### 程序写入虚拟网卡时的注意事项
+
+用户空间的程序不可随意向虚拟网卡写入数据，因为写入虚拟网卡的这些数据都会被内核网络协议栈进行解封处理，就像来自物理网卡的数据都会被解封一样。
+
+因此，**如果用户空间程序要写tun/tap设备，所写入的数据需具有特殊结构：**
+
+- 要么是已经封装了PORT的数据，即传输层的tcp数据段或udp数据报
+- 要么是已经封装了IP+PORT的数据，即ip层数据包
+- 要么是已经封装了IP+PORT+MAC的数据，即链路层数据帧
+- 要么是其它符合tcp/ip协议栈的数据，比如二层的PPP点对点数据，比如三层的icmp协议数据
+
+也就是说，程序只能向虚拟网卡写入已经封装过的数据。
+
+由于网络数据的封装都由内核的网络协议栈负责，所以程序写入虚拟网卡的数据实际上都原封不动地来自于上一轮的网络协议栈，用户空间程序无法对这部分数据做任何修改。
+
+也就是说，这时写**虚拟网卡的用户空间程序仅充当了一个特殊的【转发】程序：要么转发四层tcp/udp数据，要么转发三层数据包，要么转发二层数据帧。**
+
+这一段话可能不好理解，下面给个简单的示例分析。
+
+假如物理网卡eth0从外界网络接收了这么一段特殊的ping请求数据：
+
+![img](images/Linux常用命令/1594995429872.png)
+
+这份数据会从物理网卡传输到内核网络协议栈，网络协议栈会对其解封，解封的内容只能是tcp/ip协议栈中的内容，即只能解封帧头部、IP头部以及端口头部，网络协议栈解封后还剩下一段包含了内层IP头部(tun的IP)以及icmp请求的数据。
+
+内核会根据刚才解封的端口号找到对应的服务进程，并将解封剩下的数据传输给该进程，即传输给用户空间的程序。
+
+用户空间的程序不做任何修改地将读取到的包含了内层IP头部和ICMP请求的数据原封不动地写入虚拟网卡设备，内核从虚拟网卡接收到数据后，将数据进行解封，解封得到最终的icmp请求数据，于是内核开始构建用于响应ping请求的数据。
 
 
 
