@@ -1195,6 +1195,12 @@ ENDIF ()
 
 ## Makefile
 
+
+
+### Makefile编写
+
+
+
 ### make指定Makefile
 
 ```shell
@@ -3066,6 +3072,15 @@ tmpfs                tmpfs            512         0       512   0% /dev
 ### /etc/mtab
 
 > /etc/mtab是当前的分区挂载情况，记录的是当前系统已挂载的分区。每次挂载/卸载分区时会更新/etc/mtab文件中的信息(执行mount命令会改变/etc/mtab的信息)
+
+
+
+```shell
+# 此命令也可看到挂载的文件系统
+cat /proc/mounts
+```
+
+
 
 
 
