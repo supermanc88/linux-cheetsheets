@@ -2786,7 +2786,53 @@ execl("/bin/mount", "mount", "-i", "--no-canonicalize", "-t", "ecryptfs", fullpa
 
 
 
+
+
+## fsck 检查与修复Linux文件系统的命令
+
+```shell
+fsck from util-linux 2.36
+Usage: fsck.ext4 [-panyrcdfktvDFV] [-b superblock] [-B blocksize]
+                [-l|-L bad_blocks_file] [-C fd] [-j external_journal]
+                [-E extended-options] [-z undo_file] device
+
+Emergency help:
+ -p                   Automatic repair (no questions)
+ -n                   Make no changes to the filesystem
+ -y                   Assume "yes" to all questions
+ -c                   Check for bad blocks and add them to the badblock list
+ -f                   Force checking even if filesystem is marked clean
+ -v                   Be verbose
+ -b superblock        Use alternative superblock
+ -B blocksize         Force blocksize when looking for superblock
+ -j external_journal  Set location of the external journal
+ -l bad_blocks_file   Add to badblocks list
+ -L bad_blocks_file   Set badblocks list
+ -z undo_file         Create an undo file
+```
+
+
+
+一般情况下就只使用以下命令进行修复
+
+```shell
+fsck /
+```
+
+
+
+
+
 ## tree命令
+
+```shell
+# 安装
+yum install tree
+apt install tree
+pacman -Sy tree
+```
+
+
 
 ```shell
 # 列出当前目录结构
@@ -2994,7 +3040,7 @@ tmpfs           793M   72K  793M   1% /run/user/0
 
 
 
-## 查看分区类型
+## 查看分区文件系统类型
 
 ```shell
 df -T
@@ -3006,6 +3052,20 @@ tmpfs                tmpfs         470280     18664    451616   4% /tmp
 tmpfs                tmpfs            512         0       512   0% /dev
 /dev/root            ext4          967576    796380    154812  84% /opt/docker
 ```
+
+
+
+## /etc/mtab和/etc/fstab
+
+### /etc/fstab
+
+> /etc/fstab是开机自动挂载的配置文件，在开机时起作用。相当于启动Linux的时候，自动使用检查分区的fsck命令和挂载分区的mount命令，检查分区和挂载分区都是根据/etc/fstab中记录的相关信息进行的。
+
+
+
+### /etc/mtab
+
+> /etc/mtab是当前的分区挂载情况，记录的是当前系统已挂载的分区。每次挂载/卸载分区时会更新/etc/mtab文件中的信息(执行mount命令会改变/etc/mtab的信息)
 
 
 
