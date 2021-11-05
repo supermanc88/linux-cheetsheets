@@ -1624,9 +1624,35 @@ yum remove xxx
 ```shell
 rpm -iv xxx.rpm
 
+# 查看软件包信息
+rpm -qi <packagename>
+
 # 升级
 rpm -Uh xxx.rpm
 ```
+
+
+
+查看软件安装时间
+
+```shell
+[root@localhost ~]# rpm -qi xorg-x11-utils | grep "Install Date"
+Name        : xorg-x11-utils               Relocations: (not relocatable)
+Version     : 7.5                               Vendor: CentOS
+Release     : 14.el6                        Build Date: Thu 12 May 2016 12:02:48 PM PDT
+Install Date: Mon 06 Sep 2021 09:32:46 AM PDT      Build Host: worker1.bsys.centos.org
+Group       : User Interface/X              Source RPM: xorg-x11-utils-7.5-14.el6.src.rpm
+Size        : 234796                           License: MIT
+Signature   : RSA/SHA1, Thu 12 May 2016 12:21:43 PM PDT, Key ID 0946fca2c105b9de
+Packager    : CentOS BuildSystem <http://bugs.centos.org>
+URL         : http://www.x.org
+Summary     : X.Org X11 X client utilities
+Description :
+A collection of client utilities which can be used to query the X server
+for various information.
+```
+
+
 
 
 
@@ -4523,7 +4549,11 @@ useradd mockbuild
 
 ## 5.Linux切换su很慢(未解决见问题8)
 
+CentOS安装xorg-x11-xauth后可能会导致su root很慢，卸载就好了
+
 ```shell
+yum remove xorg-x11-utils
+yum remove xorg-x11-xauth
 ```
 
 
