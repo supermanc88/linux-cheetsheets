@@ -4521,7 +4521,7 @@ useradd mockbuild
 
 
 
-## 5.Linux切换su很慢(未解决)
+## 5.Linux切换su很慢(未解决见问题8)
 
 ```shell
 ```
@@ -4561,6 +4561,160 @@ LANG="zh_CN.UTF-8"
 
 
 原因是因为当前用户对文件所在目录有写权限，去掉目录用户的写权限之后，vim便不可写入文件了。
+
+
+
+## 8./usr/bin/xauth:  timeout in locking authority file /root/.Xauthority
+
+```shell
+strace xauth list
+```
+
+会看到如下错误：
+
+```shell
+execve("/usr/bin/xauth", ["xauth", "list"], [/* 26 vars */]) = 0
+brk(0)                                  = 0x17e3000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcc1b6d2000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+open("/etc/ld.so.cache", O_RDONLY)      = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=59251, ...}) = 0
+mmap(NULL, 59251, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fcc1b6c3000
+close(3)                                = 0
+open("/usr/lib64/libXau.so.6", O_RDONLY) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\320\r@\2453\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=13168, ...}) = 0
+mmap(0x33a5400000, 2106112, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x33a5400000
+mprotect(0x33a5402000, 2097152, PROT_NONE) = 0
+mmap(0x33a5602000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x33a5602000
+close(3)                                = 0
+open("/usr/lib64/libXext.so.6", O_RDONLY) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\3606\240\0161\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=76848, ...}) = 0
+mmap(0x310ea00000, 2170120, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x310ea00000
+mprotect(0x310ea11000, 2097152, PROT_NONE) = 0
+mmap(0x310ec11000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x11000) = 0x310ec11000
+close(3)                                = 0
+open("/usr/lib64/libXmuu.so.1", O_RDONLY) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\360\22 \0171\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=16368, ...}) = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcc1b6c2000
+mmap(0x310f200000, 2109168, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x310f200000
+mprotect(0x310f203000, 2093056, PROT_NONE) = 0
+mmap(0x310f402000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x310f402000
+close(3)                                = 0
+open("/usr/lib64/libX11.so.6", O_RDONLY) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\240\335a\0161\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=1300408, ...}) = 0
+mmap(0x310e600000, 3395000, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x310e600000
+mprotect(0x310e737000, 2097152, PROT_NONE) = 0
+mmap(0x310e937000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x137000) = 0x310e937000
+close(3)                                = 0
+open("/lib64/libc.so.6", O_RDONLY)      = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0000\356\301\2413\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=1930416, ...}) = 0
+mmap(0x33a1c00000, 3750184, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x33a1c00000
+mprotect(0x33a1d8b000, 2093056, PROT_NONE) = 0
+mmap(0x33a1f8a000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x18a000) = 0x33a1f8a000
+mmap(0x33a1f90000, 14632, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x33a1f90000
+close(3)                                = 0
+open("/usr/lib64/libxcb.so.1", O_RDONLY) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\20\271\200\2453\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=153576, ...}) = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcc1b6c1000
+mmap(0x33a5800000, 2246440, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x33a5800000
+mprotect(0x33a5824000, 2097152, PROT_NONE) = 0
+mmap(0x33a5a24000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x24000) = 0x33a5a24000
+close(3)                                = 0
+open("/lib64/libdl.so.2", O_RDONLY)     = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\340\r\200\2413\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=23088, ...}) = 0
+mmap(0x33a1800000, 2109696, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x33a1800000
+mprotect(0x33a1802000, 2097152, PROT_NONE) = 0
+mmap(0x33a1a02000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x33a1a02000
+close(3)                                = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcc1b6c0000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcc1b6bf000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcc1b6be000
+arch_prctl(ARCH_SET_FS, 0x7fcc1b6bf700) = 0
+mprotect(0x33a1f8a000, 16384, PROT_READ) = 0
+mprotect(0x33a1a02000, 4096, PROT_READ) = 0
+mprotect(0x33a1620000, 4096, PROT_READ) = 0
+munmap(0x7fcc1b6c3000, 59251)           = 0
+brk(0)                                  = 0x17e3000
+brk(0x1804000)                          = 0x1804000
+rt_sigaction(SIGINT, {0x403ff0, [INT], SA_RESTORER|SA_RESTART, 0x33a1c32570}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGTERM, {0x403ff0, [TERM], SA_RESTORER|SA_RESTART, 0x33a1c32570}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGHUP, {0x403ff0, [HUP], SA_RESTORER|SA_RESTART, 0x33a1c32570}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGPIPE, {0x403ff0, [PIPE], SA_RESTORER|SA_RESTART, 0x33a1c32570}, {SIG_DFL, [], 0}, 8) = 0
+stat("/root/.Xauthority-c", 0x7ffe38118ce0) = -1 ENOENT (No such file or directory)
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+open("/root/.Xauthority-c", O_WRONLY|O_CREAT|O_EXCL, 0600) = -1 EACCES (Permission denied)
+rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+rt_sigaction(SIGCHLD, NULL, {SIG_DFL, [], 0}, 8) = 0
+rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+nanosleep({2, 0}, 0x7ffe38118ca0)       = 0
+write(2, "xauth:  timeout in locking autho"..., 60xauth:  timeout in locking authority file /root/.Xauthority
+) = 60
+exit_group(1)                           = ?
++++ exited with 1 +++
+```
+
+
+
+执行以下命令：
+
+```shell
+rm -fr .Xauthority-*
+```
+
+
+
+
 
 
 
