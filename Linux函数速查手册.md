@@ -1406,6 +1406,29 @@ VM调用，用于从后端存储读取数据。调用时，page处于lock状态�
 
 
 
+#### 读文件函数栈流程
+
+以内核`2.6.32-754`为例：
+
+```c
+ecryptfs_readpage(struct file * file, struct page * page) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\fs\ecryptfs\mmap.c:199)
+read_pages(unsigned int nr_pages, struct list_head * pages, struct file * filp, struct address_space * mapping) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\mm\readahead.c:126)
+__do_page_cache_readahead(struct address_space * mapping, struct file * filp, unsigned long offset, unsigned long nr_to_read, unsigned long lookahead_size) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\mm\readahead.c:192)
+ra_submit(struct file_ra_state * ra, struct address_space * mapping, struct file * filp) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\mm\readahead.c:251)
+ondemand_readahead(struct address_space * mapping, struct file_ra_state * ra, struct file * filp, bool hit_readahead_marker, unsigned long offset, unsigned long req_size) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\mm\readahead.c:481)
+page_cache_sync_readahead(struct address_space * mapping, struct file_ra_state * ra, struct file * filp, unsigned long offset, unsigned long req_size) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\mm\readahead.c:513)
+do_generic_file_read(read_descriptor_t * desc, loff_t * ppos, struct file * filp) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\mm\filemap.c:1134)
+generic_file_aio_read(struct kiocb * iocb, const struct iovec * iov, unsigned long nr_segs, loff_t pos) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\mm\filemap.c:1486)
+ecryptfs_read_update_atime(struct kiocb * iocb, const struct iovec * iov, unsigned long nr_segs, loff_t pos) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\fs\ecryptfs\file.c:55)
+do_sync_read(struct file * filp, char * buf, size_t len, loff_t * ppos) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\fs\read_write.c:325)
+vfs_read(struct file * file, char * buf, size_t count, loff_t * pos) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\fs\read_write.c:354)
+sys_read(unsigned int fd, char * buf, size_t count) (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\fs\read_write.c:443)
+system_call() (\root\rpmbuild\SOURCES\linux-2.6.32-754.el6\arch\x86\kernel\entry_64.S:521)
+[Unknown/Just-In-Time compiled code] (未知源:0)
+```
+
+
+
 
 
 
