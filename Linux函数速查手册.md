@@ -1915,6 +1915,100 @@ kill_it:
 
 
 
+## d_path 获取文件路径
+
+**定义**
+
+```c
+
+/**
+ * d_path - return the path of a dentry
+ * @path: path to report
+ * @buf: buffer to return value in
+ * @buflen: buffer length
+ *
+ * Convert a dentry into an ASCII path name. If the entry has been deleted
+ * the string " (deleted)" is appended. Note that this is ambiguous.
+ *
+ * Returns a pointer into the buffer or an error code if the path was
+ * too long. Note: Callers should use the returned pointer, not the passed
+ * in buffer, to use the name! The implementation often starts at an offset
+ * into the buffer, and may leave 0 bytes at the start.
+ *
+ * "buflen" should be positive.
+ */
+char *d_path(const struct path *path, char *buf, int buflen)
+{
+	char *res;
+	struct path root;
+	struct path tmp;
+
+	/*
+	 * We have various synthetic filesystems that never get mounted.  On
+	 * these filesystems dentries are never used for lookup purposes, and
+	 * thus don't need to be hashed.  They also don't need a name until a
+	 * user wants to identify the object in /proc/pid/fd/.  The little hack
+	 * below allows us to generate a name for these objects on demand:
+	 */
+	if (path->dentry->d_op && path->dentry->d_op->d_dname)
+		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+
+	read_lock(&current->fs->lock);
+	root = current->fs->root;
+	path_get(&root);
+	read_unlock(&current->fs->lock);
+	spin_lock(&dcache_lock);
+	tmp = root;
+	res = __d_path(path, &tmp, buf, buflen);
+	spin_unlock(&dcache_lock);
+	path_put(&root);
+	return res;
+}
+```
+
+**功能**
+
+获取`path`在文件系统的路径。Convert a dentry into an ASCII path name.
+
+```c
+struct path {
+	struct vfsmount *mnt;
+	struct dentry *dentry;
+};
+```
+
+
+
+
+
+**参数**
+
+- `path` 
+
+
+
+**返回值**
+
+指向输入参数`buf`的指针，其中内容为path路径。
+
+
+
+**用法示例**
+
+```c
+path.mnt = mnt->mnt_parent;
+path.dentry = mnt->mnt_mountpoint;
+path_get(&path);
+cp = d_path(&path, buf, sizeof(buf));
+path_put(&path);
+```
+
+
+
+
+
+
+
 ## fsstack_copy_attr_times/fsstack_copy_attr_atime
 
 **定义**
