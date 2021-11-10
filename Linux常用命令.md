@@ -1788,6 +1788,18 @@ apt-get install x-window-system-core gnome-core
 
 
 
+## 切换到命令行
+
+按下 `Ctrl + ALT + Fn`进入`tty`
+
+按下fn就进入第n工作组
+
+第一到第六工作组为命令行模式，进入后输入用户名+回车，密码加回车
+
+第七工作组为X window 即GUI工作组
+
+
+
 
 
 # 系统
@@ -4550,6 +4562,8 @@ useradd mockbuild
 ## 5.Linux切换su很慢(未解决见问题8)
 
 CentOS安装xorg-x11-xauth后可能会导致su root很慢，卸载就好了
+
+**谨慎使用，给CentOS干的没有图形界面了，不在乎的可以用此方法**
 
 ```shell
 yum remove xorg-x11-utils
