@@ -4238,6 +4238,28 @@ ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsysca
 
 
 
+### 编译procmem
+
+[supermanc88/mem_proc (github.com)](https://github.com/supermanc88/mem_proc)
+
+编译此procmem可查看可读性更好的信息
+
+编译步骤：
+
+```shell
+mkdir build && build
+cmake ..
+make
+
+# 显示指定pid的相关内存信息
+./procmem <pid>
+
+# 从大到小内存使用排序显示
+./procrank
+```
+
+
+
 
 
 ## pmap
