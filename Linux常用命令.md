@@ -4129,6 +4129,179 @@ quit
 
 # 内存
 
+## 查看内存信息
+
+```shell
+cat /proc/meminfo
+```
+
+如下：
+
+```shell
+root@kerneldev:~# cat /proc/meminfo 
+MemTotal:        8119904 kB
+MemFree:         5925228 kB
+MemAvailable:    6876712 kB
+Buffers:           70624 kB
+Cached:          1034892 kB
+SwapCached:            0 kB
+Active:           936124 kB
+Inactive:         718524 kB
+Active(anon):     544044 kB
+Inactive(anon):      788 kB
+Active(file):     392080 kB
+Inactive(file):   717736 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:       2097148 kB
+SwapFree:        2097148 kB
+Dirty:                16 kB
+Writeback:             0 kB
+AnonPages:        548996 kB
+Mapped:           314920 kB
+Shmem:              2200 kB
+KReclaimable:     125720 kB
+Slab:             269384 kB
+SReclaimable:     125720 kB
+SUnreclaim:       143664 kB
+KernelStack:       10492 kB
+PageTables:        11872 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     6157100 kB
+Committed_AS:    3239728 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:       25028 kB
+VmallocChunk:          0 kB
+Percpu:            98816 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:         0 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:         0 kB
+FilePmdMapped:         0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:               0 kB
+DirectMap4k:      253760 kB
+DirectMap2M:     4988928 kB
+DirectMap1G:     5242880 kB
+```
+
+
+
+## 查看进程内存信息
+
+```shell
+cat /proc/<pid>/maps
+```
+
+如下：
+
+```shell
+root@kerneldev:~# cat /proc/910/maps 
+556f77fa7000-556f77fb3000 r--p 00000000 08:03 6691395                    /usr/sbin/sshd
+556f77fb3000-556f78035000 r-xp 0000c000 08:03 6691395                    /usr/sbin/sshd
+556f78035000-556f7807d000 r--p 0008e000 08:03 6691395                    /usr/sbin/sshd
+556f7807d000-556f78081000 r--p 000d5000 08:03 6691395                    /usr/sbin/sshd
+556f78081000-556f78082000 rw-p 000d9000 08:03 6691395                    /usr/sbin/sshd
+556f78082000-556f78087000 rw-p 00000000 00:00 0 
+556f78732000-556f78774000 rw-p 00000000 00:00 0                          [heap]
+7f0c1bf66000-7f0c1bf69000 r--p 00000000 08:03 6692987                    /usr/lib/x86_64-linux-gnu/libnss_files-2.32.so
+7f0c1bf69000-7f0c1bf71000 r-xp 00003000 08:03 6692987                    /usr/lib/x86_64-linux-gnu/libnss_files-2.32.so
+7f0c1bf71000-7f0c1bf73000 r--p 0000b000 08:03 6692987                    /usr/lib/x86_64-linux-gnu/libnss_files-2.32.so
+7f0c1bf73000-7f0c1bf74000 r--p 0000c000 08:03 6692987                    /usr/lib/x86_64-linux-gnu/libnss_files-2.32.so
+7f0c1bf74000-7f0c1bf75000 rw-p 0000d000 08:03 6692987                    /usr/lib/x86_64-linux-gnu/libnss_files-2.32.so
+7f0c1bf75000-7f0c1bf81000 rw-p 00000000 00:00 0 
+... ...
+7f0c1ca9b000-7f0c1caa5000 rw-p 00000000 00:00 0 
+7f0c1caa5000-7f0c1caa8000 r--p 00000000 08:03 6693503                    /usr/lib/x86_64-linux-gnu/libwrap.so.0.7.6
+7f0c1caa8000-7f0c1caad000 r-xp 00003000 08:03 6693503                    /usr/lib/x86_64-linux-gnu/libwrap.so.0.7.6
+7f0c1caad000-7f0c1caaf000 r--p 00008000 08:03 6693503                    /usr/lib/x86_64-linux-gnu/libwrap.so.0.7.6
+7f0c1caaf000-7f0c1cab0000 r--p 00009000 08:03 6693503                    /usr/lib/x86_64-linux-gnu/libwrap.so.0.7.6
+7f0c1cab0000-7f0c1cab1000 rw-p 0000a000 08:03 6693503                    /usr/lib/x86_64-linux-gnu/libwrap.so.0.7.6
+7f0c1cab1000-7f0c1cab3000 rw-p 00000000 00:00 0 
+7f0c1cac6000-7f0c1cac7000 r--p 00000000 08:03 6691992                    /usr/lib/x86_64-linux-gnu/ld-2.32.so
+7f0c1cac7000-7f0c1caeb000 r-xp 00001000 08:03 6691992                    /usr/lib/x86_64-linux-gnu/ld-2.32.so
+7f0c1caeb000-7f0c1caf4000 r--p 00025000 08:03 6691992                    /usr/lib/x86_64-linux-gnu/ld-2.32.so
+7f0c1caf4000-7f0c1caf5000 r--p 0002d000 08:03 6691992                    /usr/lib/x86_64-linux-gnu/ld-2.32.so
+7f0c1caf5000-7f0c1caf7000 rw-p 0002e000 08:03 6691992                    /usr/lib/x86_64-linux-gnu/ld-2.32.so
+7ffe91c45000-7ffe91c66000 rw-p 00000000 00:00 0                          [stack]
+7ffe91d13000-7ffe91d17000 r--p 00000000 00:00 0                          [vvar]
+7ffe91d17000-7ffe91d19000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+```
+
+
+
+
+
+## pmap
+
+```shell
+[root@info ~]# pmap -x 1013
+1013: /usr/sbin/sshd
+Address Kbytes RSS Dirty Mode Mapping
+00110000 1480 92 0 r-x- libcrypto.so.1.0.0
+00282000 80 80 80 rw-- libcrypto.so.1.0.0
+00296000 12 8 4 rw-- [ anon ]
+00299000 36 0 0 r-x- libkrb5support.so.0.1
+002a2000 4 4 4 rw-- libkrb5support.so.0.1
+002a3000 16 0 0 r-x- libplc4.so
+002a7000 4 4 4 rw-- libplc4.so
+002ab000 88 4 0 r-x- libaudit.so.1.0.0
+002c1000 4 4 4 r--- libaudit.so.1.0.0
+002c2000 4 4 4 rw-- libaudit.so.1.0.0
+002c3000 216 4 0 r-x- libgssapi_krb5.so.2.2
+002f9000 4 4 4 rw-- libgssapi_krb5.so.2.2
+002fa000 808 4 0 r-x- libkrb5.so.3.3
+003c4000 24 24 24 rw-- libkrb5.so.3.3
+003ca000 152 4 0 r-x- libk5crypto.so.3.1
+003f0000 4 4 4 rw-- libk5crypto.so.3.1
+003f1000 92 0 0 r-x- libnssutil3.so
+00408000 12 12 12 rw-- libnssutil3.so
+0040b000 12 0 0 r-x- libplds4.so
+0040e000 4 4 4 rw-- libplds4.so
+ 
+--- --- --- --- ---  total kB 8232 - - - 
+```
+
+- Address: 内存开始地址
+- Kbytes: 占用内存的字节数(KB)
+- RSS: 保留内存的字节数(KB)
+- Dirty: 脏页的字节数(包括共享和私有的)(KB)
+- Mode: 内存的权限：read、write、execute、shared、private(写时复制)
+- Mapping: 占用内存的文件、或(anon)(分配的内存)、或[stack] (堆栈)
+- Offset: 文件偏移
+- Device: 设备名(major:minor)
+
+
+
+## top/htop
+
+
+
+## free
+
+显示内存状态
+
+```shell
+free [-bkmotV][-s <间隔秒>]
+```
+
+- -b 以Byte为单位显示
+- -k 以KByte为单位显示
+- -m 以MB为单位显示
+- -h 以合适的单位显示
+- -o 不显示缓冲区调节列
+- -s 持续观察内存使用状况
+- -t 显示内存总和列
+- -V 显示版本信息
+
 
 
 
