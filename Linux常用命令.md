@@ -1663,6 +1663,9 @@ for various information.
 rpm -qa | grep epel
 # epel-release-7-13.noarch
 rpm -e epel-release-7-13.noarch
+
+# 卸载时不卸载依赖
+rpm -e --nodeps <packagename>
 ```
 
 
@@ -4124,6 +4127,10 @@ quit
 
 
 
+# 内存
+
+
+
 
 
 # 设备
@@ -4563,12 +4570,11 @@ useradd mockbuild
 
 CentOS安装xorg-x11-xauth后可能会导致su root很慢，卸载就好了
 
-**谨慎使用，给CentOS干的没有图形界面了，不在乎的可以用此方法**
-
 ```shell
-yum remove xorg-x11-utils
-yum remove xorg-x11-xauth
+rpm -e --nodeps xorg-x11-xauth
 ```
+
+
 
 
 
