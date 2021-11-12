@@ -4579,6 +4579,28 @@ git fetch
 
 # Linux Shell
 
+## grep使用
+
+1. 查找后缀名为txt的文件中，包含test字符串的文件，并打印出该字符串的行：
+
+```shell
+grep test ./*.txt
+```
+
+
+
+2. 以递归的方式查找符合条件的文件
+
+```shell
+grep -r test /usr/include
+```
+
+
+
+
+
+
+
 
 
 ## sed工具
