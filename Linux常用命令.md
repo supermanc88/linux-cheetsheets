@@ -709,7 +709,7 @@ yum install SDL SDL-devel
 
 
 
-### 方式1:
+### 方式1(未成功):
 
 ```shell
 dd if=/dev/zero of=CentOSRootfs.img bs=1M seek=2047 count=1
@@ -746,7 +746,7 @@ umount /mnt/rootfs
 
 
 
-### 方式2:
+### 方式2(4.0以上内核可使用此方式):
 
 ```shell
 # 需要 epel 源
@@ -783,7 +783,7 @@ yum install debootstrap
 qemu-img create -f qcow2 centos.qcow2 5G
 
 # 通过安装镜像安装到硬盘
-qemu-system-x86_64 -cdrom CentOS-6.10-x86_64-minimal.iso -drive file=centos.qcow2,format=qcow2 -2
+qemu-system-x86_64 -cdrom CentOS-6.10-x86_64-minimal.iso -drive file=centos.qcow2,format=qcow2 -m 2G
 
 # 安装完成后，进入系统查看/etc/fstab根目录挂载的设备，如/dev/sda，并从/boot/grub/grub.cfg中拿到启动参数
 # 并将/boot/initramfs拿出来
