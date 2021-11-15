@@ -4791,7 +4791,7 @@ CentOS安装xorg-x11-xauth后可能会导致su root很慢，卸载就好了
 rpm -e --nodeps xorg-x11-xauth
 ```
 
-
+卸载的时候注意，不要把依赖也卸载了，不然会进入不了图形界面
 
 
 
