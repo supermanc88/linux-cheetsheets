@@ -4427,6 +4427,29 @@ name         : dh
 # 配置
 
 
+
+## 修改系统时间/时区
+
+1. 修改时区
+
+```shell
+# CentOS6
+ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+```
+
+2. 修改时间
+
+```shell
+date -s "11/03/2015 17:55:55"
+```
+
+
+
+
+
+
+
+
 ## 库查找路径
 ```shell
 echo "libpath" >> /etc/ld.so.conf
