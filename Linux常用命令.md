@@ -2,6 +2,38 @@
 
 # Linux常用命令
 
+# 未归类
+
+## ldd
+
+```shell
+--version：打印指令版本号；
+-v：详细信息模式，打印所有相关信息；
+-u：打印未使用的直接依赖；
+-d：执行重定位和报告任何丢失的对象；
+-r：执行数据对象和函数的重定位，并且报告任何丢失的对象和函数；
+--help：显示帮助信息。
+```
+
+
+
+```shell
+# 查看程序或者库文件的依赖
+[root@20g src]# ldd mount.infosecfs
+        linux-vdso.so.1 =>  (0x00007fff7adea000)
+        libkeyutils.so.1 => /lib64/libkeyutils.so.1 (0x00007fe16b8f0000)
+        libnss3.so => /usr/lib64/libnss3.so (0x00007fe16b5a8000)
+        libc.so.6 => /lib64/libc.so.6 (0x00007fe16b213000)
+        libdl.so.2 => /lib64/libdl.so.2 (0x00007fe16b00f000)
+        libnssutil3.so => /usr/lib64/libnssutil3.so (0x00007fe16addf000)
+        libplc4.so => /lib64/libplc4.so (0x00007fe16abd9000)
+        libplds4.so => /lib64/libplds4.so (0x00007fe16a9d5000)
+        libnspr4.so => /lib64/libnspr4.so (0x00007fe16a797000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00007fe16a579000)
+        /lib64/ld-linux-x86-64.so.2 (0x00005561fd693000)
+        librt.so.1 => /lib64/librt.so.1 (0x00007fe16a371000)
+```
+
 
 
 
@@ -578,6 +610,50 @@ mkinitramfs 2.6.32 -o /boot/initramfs.img
 apt-get install qemu
 ```
 
+
+
+## 一些参数
+
+```shell
+# 设置2个cpu
+-smp 2
+
+# 设置内存2G
+-m 2G
+
+# 绑定本机ip : 5900 + prot
+-vnc :5
+
+-hda
+
+# cpu类型 不常用
+-M malta
+
+# 启动用的内核
+-kernel
+
+# 根文件系统
+-initrd /root/initramfs-2.6.32-754.el6.x86_64.img
+
+# 启动参数
+-append
+
+# 使用光驱
+-cdrom CentOS-6.10-x86_64-minimal.iso
+
+# 硬盘
+-drive file=centos.qcow2,format=qcow2
+
+# 设置网卡
+-net nic -net tap,ifname=tap0,script=no,downscript=no
+```
+
+
+
+
+
+
+
 ## CentOS6.10 编译qemu
 
 [CentOS 7下Qemu编译安装 - 华为云 (huaweicloud.com)](https://www.huaweicloud.com/articles/023bb022255569c81600e6e372fa06c0.html)
@@ -1045,7 +1121,7 @@ brctl showstp br0                   # 显示 br0 的各个接口
 ### 启动qemu
 
 ```shell
-sudo qemu-system-mipsel -M malta -kernel vmlinux-3.2.0-4-4kc-malta -hda debian_squeeze_mipsel_standard.qcow2 -append "root=/dev/sda1 console=tty0" -nographic -net nic -net tap,ifname=tap0,script=no,downscript=no
+sudo qemu-system-mipsel -M malta -kernel vmlinux-3.2.0-4-4kc-malta -hda debian_squeeze_mipsel_standard.qcow2 -append "root=/dev/sda1 console=tty0" -nographic -net nic -net tap,ifname=tap0,script=no,downscript=no -smp 4
 ```
 
 特别说明一下参数含义：-net nic 表示希望 QEMU 在虚拟机中创建一张虚拟网卡，-net tap 表示连接类型为 TAP，并且指定了网卡接口名称(就是刚才创建的 tap0，相当于把虚拟机接入网桥)。
