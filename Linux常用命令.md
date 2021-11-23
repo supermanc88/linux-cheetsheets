@@ -1298,6 +1298,15 @@ make -f <Makefile>
 
 
 
+### 安装aarch工具链
+
+```shell
+# 以Ubuntu16.04安装为例：
+apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+```
+
+进程的多版本管理见 **系统 -> 程序多版本管理** 章节
+
 
 
 ## bear工具
