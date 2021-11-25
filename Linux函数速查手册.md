@@ -2828,6 +2828,63 @@ struct kstat {
 
 
 
+## lookup_one_len
+
+**定义**
+
+```c
+/**
+ * lookup_one_len - filesystem helper to lookup single pathname component
+ * @name:	pathname component to lookup
+ * @base:	base directory to lookup from
+ * @len:	maximum length @len should be interpreted to
+ *
+ * Note that this routine is purely a helper for filesystem usage and should
+ * not be called by generic code.  Also note that by using this function the
+ * nameidata argument is passed to the filesystem methods and a filesystem
+ * using this helper needs to be prepared for that.
+ */
+struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
+{
+	int err;
+	struct qstr this;
+
+	WARN_ON_ONCE(!mutex_is_locked(&base->d_inode->i_mutex));
+
+	err = __lookup_one_len(name, &this, base, len);
+	if (err)
+		return ERR_PTR(err);
+
+	err = inode_permission(base->d_inode, MAY_EXEC);
+	if (err)
+		return ERR_PTR(err);
+	return __lookup_hash(&this, base, NULL);
+}
+
+```
+
+
+
+**功能**
+
+通过目录项的名字从父目录项中查找，如果找到的话，返回要查找目录项的`dentry`。
+
+
+
+**参数**
+
+- `name` 目录项名称字符串
+- `base` 父目录项指针
+- `len` name的长度 
+
+
+
+**返回值**
+
+
+
+
+
 # 内核内存分配
 
 [图解slub (wowotech.net)](http://www.wowotech.net/memory_management/426.html)
