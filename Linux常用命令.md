@@ -1305,6 +1305,16 @@ make -f <Makefile>
 
 
 
+### 添加链接库
+
+```shell
+gcc -o test test.c -L/libpath/ -ltest1 /libpath/libtest2.a
+```
+
+
+
+
+
 ## 交叉编译openssl
 
 1. 下载openssl源码
