@@ -3513,3 +3513,66 @@ static int crypto_cbc_encrypt(struct blkcipher_desc *desc,
 
 **返回值**
 
+
+
+
+
+# 字符设备
+
+## class_create
+
+```c
+#define class_create(owner, name)		\
+({						\
+	static struct lock_class_key __key;	\
+	__class_create(owner, name, &__key);	\
+})
+```
+
+在驱动中加入到udev的支持主要做的就是：在驱动初始化代码里调用class_create为该设备创建一个class，再为每个设备调用device_create创建对应的设备。
+
+内核中定义的struct class结构体，顾名思义，一个struct class结构体类型变量对应一个类，内核同时提供了class_create函数，可心用它来创建一个类这个类存放于sysfs下面，一旦创建好了这个类，再调用device_create函数来在dev目录下创建相应的设备节点。
+
+这样，加载模块的时候，用户空间中的udev会自动响应device_create函数，去sysfs下寻找对应的类从而创建设备节点。
+
+
+
+## device_create
+
+```c
+/**
+ * device_create - creates a device and registers it with sysfs
+ * @class: pointer to the struct class that this device should be registered to
+ * @parent: pointer to the parent struct device of this new device, if any
+ * @devt: the dev_t for the char device to be added
+ * @drvdata: the data to be added to the device for callbacks
+ * @fmt: string for the device's name
+ *
+ * This function can be used by char device classes.  A struct device
+ * will be created in sysfs, registered to the specified class.
+ *
+ * A "dev" file will be created, showing the dev_t for the device, if
+ * the dev_t is not 0,0.
+ * If a pointer to a parent struct device is passed in, the newly created
+ * struct device will be a child of that device in sysfs.
+ * The pointer to the struct device will be returned from the call.
+ * Any further sysfs files that might be required can be created using this
+ * pointer.
+ *
+ * Note: the struct class passed to this function must have previously
+ * been created with a call to class_create().
+ */
+struct device *device_create(struct class *class, struct device *parent,
+			     dev_t devt, void *drvdata, const char *fmt, ...)
+{
+	va_list vargs;
+	struct device *dev;
+
+	va_start(vargs, fmt);
+	dev = device_create_vargs(class, parent, devt, drvdata, fmt, vargs);
+	va_end(vargs);
+	return dev;
+}
+EXPORT_SYMBOL_GPL(device_create);
+```
+

@@ -90,7 +90,7 @@ sudo rpm -Uh \
 
 
 
-# 驱动开发环境
+# 驱动开发
 
 ## Debian安装驱动开发环境
 
@@ -279,6 +279,145 @@ int mkdir(const char *pathname, mode_t mode);
 格式为：
 
 `SYSCALL_DEFINE` + `参数个数` + `(` + `函数名`
+
+
+
+## 字符设备驱动
+
+### 创建设备节点
+
+#### 手动创建节点
+
+```shell
+mknod filename type major minor
+```
+
+
+
+#### 自动创建节点
+
+示例代码：
+
+```c
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/kdev_t.h>
+#include <linux/types.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+
+MODULE_LICENSE("GPL");
+dev_t device_number;
+bool dynamic = true;
+struct class *my_class;
+static struct cdev my_cdev;
+
+static int mydevice_open(struct inode *inode, struct file *file)
+{
+	pr_info("%s\n", __func__);
+	return 0;
+}
+
+static int mydevice_release(struct inode *inode, struct file *file)
+{
+	pr_info("%s\n", __func__);
+	return 0;
+}
+
+ssize_t mydevice_read(struct file *file, char __user *user_buffer,
+		      size_t count, loff_t *offset)
+{
+	pr_info("%s\n", __func__);
+	return 0;
+}
+
+ssize_t mydevice_write(struct file *file, const char __user *user_buffer,
+		       size_t count, loff_t *offset)
+{
+	pr_info("%s\n", __func__);
+	return count;
+}
+
+struct file_operations fops = {
+	.owner = THIS_MODULE,
+	.open = mydevice_open,
+	.release = mydevice_release,
+	.read = mydevice_read,
+	.write = mydevice_write
+};
+
+
+static int mynull_device_init(void)
+{
+    int retval;
+    pr_info("%s: In init\n", __func__);
+    if (dynamic) {
+        retval = alloc_chrdev_region(&device_number, 0, 1, "embedded");
+    }
+    else {
+        device_number = MKDEV(180, 0);
+        retval = register_chrdev_region(device_number, 1, "embedded");
+    }
+    if (!retval) {
+        pr_info("%s: Major Number:%d\t Minor Number:%d\n",
+                __func__, MAJOR(device_number), MINOR(device_number));
+	my_class = class_create(THIS_MODULE, "my_driver_class");
+	cdev_init(&my_cdev, &fops);
+	retval = cdev_add(&my_cdev, device_number, 1);
+	if (retval) {
+	    pr_info("%s: Failed in adding cdev to subsystem "
+			    "retval:%d\n", __func__, retval);
+	}
+	else {
+	    device_create(my_class, NULL, device_number, NULL, "my_null");
+	}
+    }
+    else
+        pr_err("%s: Failed in allocating device number "
+                "Error:%d\n", __func__, retval);
+    return retval;
+}
+
+static void mynull_device_exit(void)
+{
+    cdev_del(&my_cdev);
+    device_destroy(my_class, device_number);
+    class_destroy(my_class);
+    unregister_chrdev_region(device_number, 5);
+    pr_info("%s: In exit\n", __func__);
+}
+
+module_init(mynull_device_init);
+module_exit(mynull_device_exit);
+```
+
+
+
+Automatic creating/deleting of device nodes is handled by udev. For udev to work properly, device driver should expose major and minor number to sysfs, that is done by below API's
+
+1. device_create — creates a device and registers it with sysfs. Verify it with (`find /sys -name 'my_null'`)
+2. class_create — create a struct class structure (`ls -l /sys/class/my_driver_class`)
+
+
+
+### udev
+
+udev是Linux kernel的设备管理器，主要管理`/dev`目录底下的设备节点。它同时也是用来接替devfs及hotplug的功能，这意味着它要在添加/删除硬件时处理`/dev`目录以及所有用户空间的行为，包括加载firmware时。
+
+udev的最新版本依赖于升级后的Linux kernel 2.6.13的uevent接口的最新版本。使用新版本udev的系统不能在2.6.13以下版本启动，除非使用noudev参数来禁用udev并使用传统的/dev来进行设备读取。
+
+
+
+在传统的Linux系统中，`/dev`目录下的设备节点为一系列静态存在的文件，而udev则动态提供了在系统中实际存在的设备节点。
+
+- udev支持设备的固定命名，而并不依赖于设备插入系统的顺序。默认的udev设置提供了存储设备的固定命名。可以使用其vid（vendor）、pid（device）、设备名称（model）等属性或其父设备的对应属性来确认某一设备。
+- udev完全在用户空间执行，而不是像devfs在内核空间一样执行。结果就是udev将命名策略从内核中移走，并可以在节点创建前用任意程序在设备属性中为设备命名。
+
+#### 运行方式
+
+udev是一个通用的内核设备管理器。它以守护进程的方式运行于linux系统，并监听在新设备初始化或设备从系统中移除时，内核所发出的uevent。
+
+系统提供了一套规则用于匹配可发现的设备事件和属性的导出值。匹配规则可能命名并创建设备节点，并运行配置程序来对设备进行设置。udev规则可以匹配像内核子系统、内核设备名称、设备的物理属性，或设备序列号的属性。规则也可以请求外部程序提供信息来命名设备，或指定一个永远一样的自定义名称来命名设备，而不管设备什么时候被系统发现。
 
 
 
@@ -1809,7 +1948,8 @@ rpm -ql nginx-1.12.1-1.el7.ngx.x86_64
 ## apt
 
 ```shell
-apt list --installed																		列出安装的软件包
+# 列出安装的软件包
+apt list --installed
 apt remove [python3-apt 包名]
 ```
 
@@ -2255,6 +2395,8 @@ https://www.huaweicloud.com/articles/d57fcb08c079cace334188a8aad2b8e9.html
 
 ## 程序的多版本管理
 
+
+
 以`gcc`和`g++`为例：
 
 step1.安装多版本
@@ -2280,6 +2422,62 @@ step2.然后选择gcc和g++版本
 sudo update-alternatives --config gcc
 sudo update-alternatives --config g++
 ```
+
+
+
+### 安装低版本的gcc/g++
+
+在高版本的源里没有安装包，直接更新一个低版本的源就好了。以gcc-4.8为例，这里首先把ubuntu 16.04的源更新到`/etc/apt/sources.list`
+
+```shell
+# official
+deb http://dk.archive.ubuntu.com/ubuntu/ xenial main
+deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe
+ 
+# 国内源aliyun
+deb http://mirrors.aliyun.com/ubuntu/ xenial main
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial main
+deb http://mirrors.aliyun.com/ubuntu/ xenial-updates main
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-updates main
+deb http://mirrors.aliyun.com/ubuntu/ xenial universe
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial universe
+deb http://mirrors.aliyun.com/ubuntu/ xenial-updates universe
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-updates universe
+deb http://mirrors.aliyun.com/ubuntu/ xenial-security main
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-security main
+deb http://mirrors.aliyun.com/ubuntu/ xenial-security universe
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-security universe
+```
+
+然后 `sudo apt update` 一下，把包资源更新进来。
+
+可以先查看一下版本信息：`sudo apt-cache policy gcc-4.8` ，作用类似于搜索，下面所有能安装的子版本都会列出来。然后直接 `apt install` 对应的版本即可。
+这种方法不管想安装什么版本的旧软件，只要有对应的更新源即可。
+
+
+
+### glibc和gcc的关系
+
+gcc是编译器，基本上Linux下所有的程序(包括内核)都是gcc编译的，libc当然也是。
+
+glibc是gnu发布的libc库，也即c运行库。glibc是linux系统中最底层的api，几乎其它任何运行库都会依赖于glibc。glibc除了封装操作系统所提供的系统服务外，它本身也提供了许多其它一些必要功能服务的实现，主要的如下：
+
+1. string，字符串处理
+2. signal，信号处理
+3. dlfcn，管理共享库的动态加载
+4. direct，文件目录操作
+5. elf，共享库的动态加载器，也即interpreter
+6. iconv，不同字符集的编码转换
+7. inet，socket接口的实现
+8. io
+9. linux threads
+10. locale，本地化
+11. login，虚拟终端设备的管理，及系统的安全访问
+12. malloc，动态内存的分配与管理
+13. nis
+14. stdlib，其它基本功能
+
+gcc和libc是互相依赖的两个软件，它们合作的方式类型Linux系统的自举。先在一个可以运行的带有老libc和gcc的系统上，用老gcc编译出一个新版本的gcc+老libc，再用这个新gcc编译出一个新gcc+新libc，再用这套新的去编译整个系统。
 
 
 
@@ -2428,6 +2626,33 @@ sudo yum makecache
 
 
 
+
+## product_uuid
+
+```shell
+dmidecode -s system-uuid
+```
+
+结果如下：
+
+```shell
+root@kerneldev:~# dmidecode -s system-uuid
+9b764d56-6d2b-7ffc-2f38-f47cb793471b
+```
+
+
+
+
+```shell
+root@kerneldev:~# cat /sys/class/dmi/id/product_serial 
+VMware-56 4d 76 9b 2b 6d fc 7f-2f 38 f4 7c b7 93 47 1b
+root@kerneldev:~# cat /sys/class/dmi/id/product_uuid 
+9b764d56-6d2b-7ffc-2f38-f47cb793471b
+```
+
+### 如何生成的
+
+The DMI driver in the Linux kernel only allows to read the values.  SMBIOS
 
 
 
@@ -3325,6 +3550,10 @@ dr-xr-xr-x   4 root root 4096 Apr 19  2012 boot
 
 
 # 进程
+
+## 程序多版本管理
+
+见`系统`章节
 
 ## 查看系统中所有的进程
 
@@ -4727,6 +4956,257 @@ make install   # as root
 
 
 
+# Docker
+
+## 安装
+
+```shell
+# 卸载之前的版本
+sudo apt-get remove docker docker-engine docker.io containerd runc
+
+# 1. Update the apt package index and install packages to allow apt to use a repository over HTTPS:
+sudo apt-get update
+sudo apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+    
+# 2. Add Docker’s official GPG key:
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+# 3. Use the following command to set up the stable repository. To add the nightly or test repository, add the word nightly or test (or both) after the word stable in the commands below. Learn about nightly and test channels.
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  
+# 4. Update the apt package index, and install the latest version of Docker Engine and containerd, or go to the next step to install a specific version:
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io
+
+# 5. To install a specific version of Docker Engine, list the available versions in the repo, then select and install:
+apt-cache madison docker-ce
+sudo apt-get install docker-ce=<VERSION_STRING> docker-ce-cli=<VERSION_STRING> containerd.io
+
+# 6. Verify that Docker Engine is installed correctly by running the hello-world image.
+sudo docker run hello-world
+```
+
+正确安装结果：
+
+```shell
+root@kerneldev:~# docker run hello-world
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/
+```
+
+
+
+## 使用
+
+### 列出容器
+
+```shell
+docker ps
+```
+
+### 停止容器
+
+```shell
+docker stop
+```
+
+### 获取镜像
+
+```shell
+docker pull gcc:4.9.3
+```
+
+结果
+
+```shell
+root@kerneldev:~# docker pull gcc:4.9.3
+4.9.3: Pulling from library/gcc
+8ceedfe606fc: Pull complete 
+6523e37a38fa: Pull complete 
+808895c4b06b: Pull complete 
+b8a880ae2cb1: Pull complete 
+f5782c2862ea: Pull complete 
+d80a04a9c4e1: Pull complete 
+075f605c5111: Pull complete 
+08509e1047f6: Pull complete 
+Digest: sha256:8290dfe9cf43f6704b015dc3fe14e0cb0051eeabf8646b33b12437f7ae1c6ac4
+Status: Downloaded newer image for gcc:4.9.3
+docker.io/library/gcc:4.9.3
+```
+
+### 启动容器
+
+```shell
+root@kerneldev:~# docker run -it gcc:4.9.3 /bin/bash
+root@ee06065c8700:/# gcc -v
+Using built-in specs.
+COLLECT_GCC=gcc
+COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/x86_64-unknown-linux-gnu/4.9.3/lto-wrapper
+Target: x86_64-unknown-linux-gnu
+Configured with: /usr/src/gcc/configure --disable-multilib --enable-languages=c,c++
+Thread model: posix
+gcc version 4.9.3 (GCC) 
+```
+
+**参数说明**
+
+- -i：交互式操作
+- -t：终端
+- gcc:4.9.3:gcc的镜像
+- /bin/bash: 放在镜像名后的是命令，这里我们希望有个交互式shell，因此用的是/bin/bash
+
+要退出终端，直接输入`exit`
+
+```shell
+root@ee06065c8700:/# exit
+exit
+```
+
+### 列出已停止运行的容器
+
+```shell
+root@kerneldev:~# docker ps -a
+CONTAINER ID   IMAGE         COMMAND       CREATED          STATUS                          PORTS     NAMES
+ee06065c8700   gcc:4.9.3     "/bin/bash"   3 minutes ago    Exited (0) About a minute ago             vigilant_darwin
+79d3ad984a75   gcc:4.9.3     "/bin/bash"   3 minutes ago    Exited (0) 3 minutes ago                  happy_cray
+6c9aa471f2b4   hello-world   "/hello"      12 minutes ago   Exited (0) 12 minutes ago                 dreamy_ganguly
+d32b9760ed6b   hello-world   "/hello"      12 minutes ago   Exited (0) 12 minutes ago                 vibrant_bell
+```
+
+使用`docker start`启动一个已停止的容器：
+
+```shell
+root@kerneldev:~# docker start ee06065c8700
+ee06065c8700
+root@kerneldev:~# docker ps -a
+CONTAINER ID   IMAGE         COMMAND       CREATED          STATUS                      PORTS     NAMES
+ee06065c8700   gcc:4.9.3     "/bin/bash"   4 minutes ago    Up 6 seconds                          vigilant_darwin
+79d3ad984a75   gcc:4.9.3     "/bin/bash"   4 minutes ago    Exited (0) 4 minutes ago              happy_cray
+6c9aa471f2b4   hello-world   "/hello"      13 minutes ago   Exited (0) 13 minutes ago             dreamy_ganguly
+d32b9760ed6b   hello-world   "/hello"      13 minutes ago   Exited (0) 13 minutes ago             vibrant_bell
+```
+
+## 后台运行
+
+在大部分的场景下，我们希望docker的服务是在后台运行的，我们可以通过`-d`指定容器的运行模式：
+
+```shell
+root@kerneldev:~# docker run -itd --name gcc-test gcc:4.9.3 /bin/bash
+8255ecfccb06211ec7b6f73c58abe435ee0b6976eae512e45aee02539e90dd5c
+root@kerneldev:~# docker ps -a
+CONTAINER ID   IMAGE         COMMAND       CREATED          STATUS                       PORTS     NAMES
+8255ecfccb06   gcc:4.9.3     "/bin/bash"   5 seconds ago    Up 4 seconds                           gcc-test
+ee06065c8700   gcc:4.9.3     "/bin/bash"   8 minutes ago    Exited (137) 2 minutes ago             vigilant_darwin
+79d3ad984a75   gcc:4.9.3     "/bin/bash"   8 minutes ago    Exited (0) 8 minutes ago               happy_cray
+6c9aa471f2b4   hello-world   "/hello"      17 minutes ago   Exited (0) 17 minutes ago              dreamy_ganguly
+d32b9760ed6b   hello-world   "/hello"      17 minutes ago   Exited (0) 17 minutes ago              vibrant_bell
+```
+
+
+
+## 停止一个容器
+
+```shell
+root@kerneldev:~# docker stop ee06065c8700
+ee06065c8700
+root@kerneldev:~# docker ps -a
+CONTAINER ID   IMAGE         COMMAND       CREATED          STATUS                       PORTS     NAMES
+ee06065c8700   gcc:4.9.3     "/bin/bash"   5 minutes ago    Exited (137) 3 seconds ago             vigilant_darwin
+79d3ad984a75   gcc:4.9.3     "/bin/bash"   5 minutes ago    Exited (0) 5 minutes ago               happy_cray
+6c9aa471f2b4   hello-world   "/hello"      14 minutes ago   Exited (0) 14 minutes ago              dreamy_ganguly
+d32b9760ed6b   hello-world   "/hello"      14 minutes ago   Exited (0) 14 minutes ago              vibrant_bell
+```
+
+停止的容器可以通过`docker resart`重启：
+
+```shell
+docker restart ee06065c8700
+```
+
+
+
+## 进入容器
+
+在使用`-d`参数时，容器启动后会进入后台，此时想要进入容器，可以通过以下指令进入：
+
+- **docker attach**
+- **docker exec** ：推荐使用此命令，因为退出此容器终端不会导致容器的停止
+
+```shell
+docker attach ee06065c8700 
+
+docker exec -it ee06065c8700 /bin/bash
+```
+
+
+
+## 导出或导入容器
+
+### 导出容器
+
+```shell
+docker export ee06065c8700 > gcc4.9.3.tar
+```
+
+这样将导出容器快照到本地文件
+
+
+
+### 导入容器
+
+可以使用 docker import 从容器快照文件中再导入为镜像，以下实例将快照文件 ubuntu.tar 导入到镜像 test/ubuntu:v1:
+
+```shell
+cat docker/ubuntu.tar | docker import - test/ubuntu:v1
+```
+
+
+
+此外，也可以通过指定 URL 或者某个目录来导入，例如：
+
+```shell
+docker import http://example.com/exampleimage.tgz example/imagerepo
+```
+
+
+
+## 删除容器
+
+删除容器使用`docker rm`命令：
+
+```shell
+docker rm -f ee06065c8700
+```
+
+
+
+
+
 
 
 # Git
@@ -4784,6 +5264,17 @@ git fetch
 
 
 # Linux Shell
+
+
+
+## shell中的一些特殊变量
+
+1. shell获取自身的pid：`$$`
+2. shell 的父进程pid：`$PPID`
+3. 当前的用户ID：`$UID`
+4. 
+
+
 
 ## grep使用
 
