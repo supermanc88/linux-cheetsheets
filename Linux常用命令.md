@@ -5205,6 +5205,12 @@ docker rm -f ee06065c8700
 
 
 
+## 挂载宿主机目录
+
+```shell
+docker run -it -v /home/superman/Downloads:/usr/Downloads ubuntu64 /bin/bash
+```
+
 
 
 
