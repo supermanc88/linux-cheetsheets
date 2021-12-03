@@ -2313,9 +2313,11 @@ GLIBC_PRIVATE
 
 4. 系统会根据指定的运行级别进入对应的`rcN.d`目录，并按照文件名顺序检索目录下的链接文件
 
-   >对于以K开头的文件，系统将终止对应的服务
+   >对于以K开头的文件，系统将终止对应的服务，相当于`/etc/rc.d/init.d/xxx stop`
    >
-   >对于以S开头的文件，系统将启动对应的服务
+   >对于以S开头的文件，系统将启动对应的服务，相当于`/etc/rc.d/init.d/xxx start`
+   >
+   >对于以D开头的文件，系统将忽略此服务，可用来在指定的运行级别禁止一个脚本
 
 5. 查看运行级别用：`runlevel`
 
@@ -2344,6 +2346,28 @@ GLIBC_PRIVATE
 ### 注意
 
 多数桌面Linux系统缺省`runlevel 5`，用户登陆时是图形界面，而多数的服务器版本缺省`runlevel 3`，用户登陆时是命令行界面，`runlevel 1`和`runlevel 2`除了调试之外很少使用，`runlevel s/S`并不是直接给用户使用，而是用来为Single user mode作准备。
+
+并非所有的发行版都使用了`/etc/rc.d/rc.local`，通常它是一个留给用户修改的shell脚本。一般会在init进程结束的时候运行它，所以你可以在这里放一些想要运行的额外脚本，而不用再创建自己的init脚本。
+
+
+
+### redhat系统的启动顺序
+
+```shell
+1. 加载内核
+
+2. 执行init程序
+
+3. /etc/rc.d/rc.sysinit 		#由init执行的第一个脚本
+
+4. /etc/rc.d/rc $RUNLEVEL		#$RUNLEVEL 为缺省的运行模式
+
+5. /etc/rc.d/rc.local
+
+6. /sbin/mingetty				#等待用户登陆
+```
+
+
 
 
 
