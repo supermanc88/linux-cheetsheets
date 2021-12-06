@@ -5141,6 +5141,26 @@ Status: Downloaded newer image for gcc:4.9.3
 docker.io/library/gcc:4.9.3
 ```
 
+
+
+#### 拉取一个其它平台的镜像
+
+```shell
+docker pull --platfomr linux/amd64 ubuntu:21.04
+```
+
+
+
+### 删除镜像
+
+```shell
+docker rmi -f <image_id> 
+```
+
+
+
+
+
 ### 启动容器
 
 ```shell
