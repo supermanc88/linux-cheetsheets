@@ -764,8 +764,14 @@ mkinitramfs 2.6.32 -o /boot/initramfs.img
 
 # qemu使用
 
+## 安装
+
 ```shell
+#linux
 apt-get install qemu
+
+#macos
+brew install qemu
 ```
 
 
@@ -2347,7 +2353,7 @@ GLIBC_PRIVATE
 
 多数桌面Linux系统缺省`runlevel 5`，用户登陆时是图形界面，而多数的服务器版本缺省`runlevel 3`，用户登陆时是命令行界面，`runlevel 1`和`runlevel 2`除了调试之外很少使用，`runlevel s/S`并不是直接给用户使用，而是用来为Single user mode作准备。
 
-并非所有的发行版都使用了`/etc/rc.d/rc.local`，通常它是一个留给用户修改的shell脚本。一般会在init进程结束的时候运行它，所以你可以在这里放一些想要运行的额外脚本，而不用再创建自己的init脚本。
+**并非所有的发行版都使用了`/etc/rc.d/rc.local`，通常它是一个留给用户修改的shell脚本。一般会在init进程结束的时候运行它，所以你可以在这里放一些想要运行的额外脚本，而不用再创建自己的init脚本。**
 
 
 
@@ -5111,6 +5117,13 @@ For more examples and ideas, visit:
 docker ps
 ```
 
+ps常用参数：
+
+- -a:列出所有容器，包括停止运行的，如果没有这个选项，则默认只列出正在运行的容器。
+- -q:这个选项列出容器的数字id，而不是容器的所有信息
+
+
+
 ### 停止容器
 
 ```shell
@@ -5159,6 +5172,14 @@ docker rmi -f <image_id>
 
 
 
+一次性删除所有镜像:
+
+```shell
+docker rmi -f $(docker image -q)
+```
+
+
+
 
 
 ### 启动容器
@@ -5181,6 +5202,12 @@ gcc version 4.9.3 (GCC)
 - -t：终端
 - gcc:4.9.3:gcc的镜像
 - /bin/bash: 放在镜像名后的是命令，这里我们希望有个交互式shell，因此用的是/bin/bash
+
+run的其它参数：
+
+- --name:给容器命名
+
+
 
 要退出终端，直接输入`exit`
 
@@ -5248,6 +5275,14 @@ d32b9760ed6b   hello-world   "/hello"      14 minutes ago   Exited (0) 14 minute
 
 ```shell
 docker restart ee06065c8700
+```
+
+
+
+### 停止所有容器
+
+```shell
+docker stop $(docker ps -a -q)
 ```
 
 
