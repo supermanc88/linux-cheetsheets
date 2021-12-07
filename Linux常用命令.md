@@ -2715,7 +2715,7 @@ sudo yum makecache
 
 
 
-## product_uuid
+## product_uuid/system-uuid
 
 ```shell
 dmidecode -s system-uuid
@@ -5419,6 +5419,37 @@ git fetch
 
 
 
+## shell脚本中接收参数
+
+```shell
+#!/bin/bash
+
+# $0 包含文件路径
+echo "执行文件名：$0"
+
+echo "第一个参数：$1"
+
+echo "第二个参数：$2"
+
+echo "第三个参数：$3"
+```
+
+
+
+### 用来处理参数的其它特殊字符
+
+- `$#`    传递到脚本的参数个数
+- `$*`    以一个字符串显示所有向脚本传递的参数，如用`"`括起来，会以`"$1 $2 ... $n"`的形式显示所有参数
+- `$$`    脚本的进程ID号
+- `$!`    后台运行的最后一个进程ID号
+- `$@`    与`$*`相同，如用`"`括起来，会以`"$1" "$2" ... "$n"`的形式显示所有参数
+- `$-`    显示shell使用的当前选项
+- `$?`    显示最后命令的退出状态。0表示没有错误，其它任何值表明有错误
+
+
+
+
+
 ## grep使用
 
 1. 查找后缀名为txt的文件中，包含test字符串的文件，并打印出该字符串的行：
@@ -5445,9 +5476,76 @@ grep -r test /usr/include
 
 ## sed工具
 
+待补
 
 
 
+## xargs命令
+
+`xargs`命令的作用，是将标准输入转为命令行参数。
+
+```shell
+echo "hello world" | xargs echo
+```
+
+
+
+`xargs`命令的格式如下：
+
+```shell
+xargs [-options] [command]
+```
+
+真正执行的命令，紧跟在`xargs`后面，接受`xargs`传来的参数。
+
+`xargs`的作用在于，大多数命令(比如`rm`、`mkdir`、`ls`)与管道一起使用时，都需要`xargs`将标准输入转为命令行参数。
+
+```shell
+echo "one two three" | xargs mkdir
+```
+
+
+
+### xargs单独使用
+
+```shell
+xargs
+# 等同于
+xargs echo
+```
+
+
+
+### 其它参数
+
+- `-d`：默认情况下，`xargs`将换行符和空格作为分隔符，把标准输入分解成一个个命令行参数。`-d`可以更改分隔符。
+
+  ```shell
+  echo -e "a\tb\tc" | xargs -d "\t" echo
+  a b c
+  ```
+
+- `-p`：打印出要执行的命令，询问用户是否要执行：
+
+  ```shell
+  echo "one two three" | xargs -p rm
+  rm one two three?...
+  ```
+
+  用户输入`y/Y`以后，才会执行
+
+- `-t`：参数是打印出最终要执行的命令，然后直接执行，不需要用户确认
+
+  ```shell
+  echo "one two three" | xargs -t rm
+  rm one two three
+  ```
+
+  
+
+
+
+## 其它
 
 ```shell
 # shell获取自身pid
