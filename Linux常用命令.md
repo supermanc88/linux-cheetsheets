@@ -2089,6 +2089,8 @@ echo 0 > /proc/sys/kernel/randomize_va_space
 
 ## 定时任务
 
+### cron
+
 `crond`命令每分钟会定期检查是否有要执行的工作，如果有要执行的工作便会自动执行该工作。
 
 注意：新创建的`cron`任务，不会马上执行，至少要过2分钟后才可以，当然可以重启cron来马上执行。
@@ -2143,6 +2145,235 @@ f1 f2 f3 f4 f5 program
 ```
 
 使用者也可以将所有的设定先存放在文件中，用 crontab file 的方式来设定执行时间。
+
+
+
+### systemd定时器
+
+Linux系统通常都使用`cron`设置定时任务，但是systemd也有这个功能，而且优点显著。
+
+- 自动生成日志，配合systemd的日志工具，很方便除错
+- 可以设置内存和CPU的使用额度，比如最多使用50%的CPU
+- 任务可以拆分，信赖其它systemd单元，完成非常复杂的任务
+
+
+
+#### system单元
+
+单元就是systemd的最小功能单位，是单个进程的描述。一个个小的单元相互信赖，组成一个庞大的任务管理系统，这主湜systemd的基本思想。
+
+由于systemd要做的事情太多，导致单元有很多不同的种类，大概有12种。举例来说，Service单元负责后台服务，Timer单元负责定时器，Slice单元负责资源的分配。
+
+每个单元都有一个单元描述文件，它们分散在三个目录：
+
+- /lib/systemd/system:系统默认的单元文件
+- /etc/systemd/system:用户安装的软件的单元文件
+- /usr/lib/systemd/system:用户自己定义的单元文件
+
+下面的命令可以查看所有的单元文件：
+
+```shell
+# 查看所有单元
+systemctl list-unit-files
+
+# 查看所有 Service 单元
+systemctl list-unit-files --type services
+
+# 查看所有 Timer 单元
+systemctl list-unit-files --type timer
+```
+
+
+
+#### 单元管理命令
+
+```shell
+# 启动单元
+systemctl start [UnitName]
+
+# 停止单元
+systemctl stop [UnitName]
+
+# 重启单元
+systemctl restart [UnitName]
+
+# 杀死单元
+systemctl kill [UnitName]
+
+# 查看单元状态
+systemctl status [UnitName]
+
+# 开机自动执行单元
+systemctl enable [UnitName]
+
+# 关闭开机自动执行
+systemctl disable [UnitName]
+```
+
+
+
+#### Service单元
+
+Service单元就是所要执行的任务，比如发送邮件就是一种Service。
+
+例：
+
+在`/usr/lib/systemd/system`目录里面新建一个文件，比如`mytimer.service`文件，写入以下内容：
+
+```shell
+[Unit]
+Description=MyTimer
+
+[Service]
+ExecStart=/bin/bash /path/to/mail.sh
+```
+
+**注意：其中的程序路径都要写成绝对路径，比如`bash`要写成`/bin/bash`，否则systemd找不到。**
+
+可以看到，这个Service单元文件分成两个部分。
+
+[Unit]部分介绍单元的基本信息(即元数据)，`Description`字段给出这个单元的简单介绍；
+
+[Service]部分用来定制行为，Systemd提供许多字段：
+
+- ExecStart : systemctl start
+- ExecStop : systemctl stop
+- ExecReload : systemctl reload
+- ExecStartPre : ExecStart之前自动执行的命令
+- ExecStartPost : ExecStart之后自动执行的命令
+- ExecStopPost : ExecStop之后自动执行的命令
+
+现在，启动这个Service：
+
+```shell
+sudo systemctl start mytimer.service
+```
+
+
+
+#### Timer单元
+
+Service单元只是定义了如何执行任务，要定时执行这个Service，还必须定义Timer单元。
+
+`/usr/lib/systemd/system`目录里面，新建一个`mytimer.timer`文件，写入下面的内容：
+
+```shell
+[Unit]
+Description=Runs mytimer every hour
+
+[Timer]
+OnUnitActiveSec=1h
+Unit=mytimer.service
+
+[Install]
+WantedBy=multi-user.target
+```
+
+这个 Timer 单元文件分成几个部分。
+
+`[Unit]`部分定义元数据。
+
+`[Timer]`部分定制定时器。Systemd 提供以下一些字段:
+
+- `OnActiveSec`：定时器生效后，多少时间开始执行任务
+- `OnBootSec`：系统启动后，多少时间开始执行任务
+- `OnStartupSec`：Systemd 进程启动后，多少时间开始执行任务
+- `OnUnitActiveSec`：该单元上次执行后，等多少时间再次执行
+- `OnUnitInactiveSec`： 定时器上次关闭后多少时间，再次执行
+- `OnCalendar`：基于绝对时间，而不是相对时间执行
+- `AccuracySec`：如果因为各种原因，任务必须推迟执行，推迟的最大秒数，默认是60秒
+- `Unit`：真正要执行的任务，默认是同名的带有`.service`后缀的单元
+- `Persistent`：如果设置了该字段，即使定时器到时没有启动，也会自动执行相应的单元
+- `WakeSystem`：如果系统休眠，是否自动唤醒系统
+
+上面的脚本里面，`OnUnitActiveSec=1h`表示一小时执行一次任务。其他的写法还有`OnUnitActiveSec=*-*-* 02:00:00`表示每天凌晨两点执行，`OnUnitActiveSec=Mon *-*-* 02:00:00`表示每周一凌晨两点执行，具体请参考[官方文档](https://www.freedesktop.org/software/systemd/man/systemd.time.html)。
+
+
+
+#### [Install]和target
+
+`mytimer.timer`文件里面，还有一个`[Install]`部分，定义开机自启动（`systemctl enable`）和关闭开机自启动（`systemctl disable`）这个单元时，所要执行的命令。
+
+上面脚本中，`[Install]`部分只写了一个字段，即`WantedBy=multi-user.target`。它的意思是，如果执行了`systemctl enable mytimer.timer`（只要开机，定时器自动生效），那么该定时器归属于`multi-user.target`。
+
+所谓 Target 指的是一组相关进程，有点像 init 进程模式下面的启动级别。启动某个Target 的时候，属于这个 Target 的所有进程都会全部启动。
+
+`multi-user.target`是一个最常用的 Target，意为多用户模式。也就是说，当系统以多用户模式启动时，就会一起启动`mytimer.timer`。它背后的操作其实很简单，执行`systemctl enable mytimer.timer`命令时，就会在`multi-user.target.wants`目录里面创建一个符号链接，指向`mytimer.timer`。
+
+
+
+#### 定时器的相关命令
+
+下面，启动刚刚新建的这个定时器。
+
+> ```bash
+> $ sudo systemctl start mytimer.timer
+> ```
+
+你应该立刻就会收到邮件，然后每个小时都会收到同样邮件。
+
+查看这个定时器的状态。
+
+> ```bash
+> $ systemctl status mytimer.timer
+> ```
+
+查看所有正在运行的定时器。
+
+> ```bash
+> $ systemctl list-timers
+> ```
+
+关闭这个定时器。
+
+> ```bash
+> $ sudo systemctl stop myscript.timer
+> ```
+
+下次开机，自动运行这个定时器。
+
+> ```bash
+> $ sudo systemctl enable myscript.timer
+> ```
+
+关闭定时器的开机自启动。
+
+> ```bash
+> $ sudo systemctl disable myscript.timer
+> ```
+
+
+
+#### 日志相关命令
+
+如果发生问题，就需要查看日志。Systemd 的日志功能很强，提供统一的命令。
+
+> ```bash
+> # 查看整个日志
+> $ sudo journalctl
+> 
+> # 查看 mytimer.timer 的日志
+> $ sudo journalctl -u mytimer.timer
+> 
+> # 查看 mytimer.timer 和 mytimer.service 的日志
+> $ sudo journalctl -u mytimer
+> 
+> # 从结尾开始查看最新日志
+> $ sudo journalctl -f
+> 
+> # 从结尾开始查看 mytimer.timer 的日志
+> $ journalctl -f -u timer.timer
+> ```
+
+
+
+#### 参考链接
+
+- [How to Use Systemd Timers](https://jason.the-graham.com/2013/03/06/how-to-use-systemd-timers/), by Jason Graham
+- [Using systemd as a better cron](https://medium.com/horrible-hacks/using-systemd-as-a-better-cron-a4023eea996d), by luqmaan
+- [Getting started with systemd](https://coreos.com/os/docs/latest/getting-started-with-systemd.html), by CoreOS
+- [systemd/Timers](https://wiki.archlinux.org/index.php/Systemd/Timers), by ArchWiki
+- [Understanding Systemd Units and Unit Files](https://www.digitalocean.com/community/tutorials/understanding-systemd-units-and-unit-files), by Justin Ellingwood
 
 
 
