@@ -2867,7 +2867,7 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 
 **功能**
 
-通过目录项的名字从父目录项中查找，如果找到的话，返回要查找目录项的`dentry`。
+通过目录项的名字从父目录项中查找，如果找到的话，返回要查找目录项的`dentry`。如果不存在就创建一个dentry。
 
 
 
@@ -2880,6 +2880,10 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 
 
 **返回值**
+
+
+
+## lookup_create
 
 
 

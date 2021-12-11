@@ -2067,6 +2067,8 @@ apt-get install x-window-system-core gnome-core
 
 # 系统
 
+
+
 ## 修改root密码
 
 在启动时修改kernel启动参数，在后面添加`single`或数字`1`，会直接进入系统，之后使用命令`passwd root`
@@ -3868,7 +3870,426 @@ dr-xr-xr-x   4 root root 4096 Apr 19  2012 boot
 
 
 
+### 文件重定向
+
+在shell脚本中，默认情况下，总有3个文件处于打开状态，标准输入(键盘输入)、标准输出(输出到屏幕)、标准错误(也是输出到屏幕)，它们分别对应的文件描述符是0(stdin)，1(stdout)，2(stderr).
+
+`>`默认为标准输出重定向，与`1>`相同
+
+`2>&1`意思是把标准错误输出重定向到标准输出。
+
+`&>file`意思是把标准输出和标准错误输出都重定向到文件file中
+
+`/dev/null`是一个文件，这个文件比较特殊，所有传给它的东西都丢弃掉
+
+`command < file`将文件中的内容作为输入
+
+
+
 # 进程
+
+## 信号/Signal
+
+### 列出信号
+
+```shell
+# kill -l 也可列出信号
+root@ubuntu:~# trap -l
+ 1) SIGHUP	 2) SIGINT	 3) SIGQUIT	 4) SIGILL	 5) SIGTRAP
+ 6) SIGABRT	 7) SIGBUS	 8) SIGFPE	 9) SIGKILL	10) SIGUSR1
+11) SIGSEGV	12) SIGUSR2	13) SIGPIPE	14) SIGALRM	15) SIGTERM
+16) SIGSTKFLT	17) SIGCHLD	18) SIGCONT	19) SIGSTOP	20) SIGTSTP
+21) SIGTTIN	22) SIGTTOU	23) SIGURG	24) SIGXCPU	25) SIGXFSZ
+26) SIGVTALRM	27) SIGPROF	28) SIGWINCH	29) SIGIO	30) SIGPWR
+31) SIGSYS	34) SIGRTMIN	35) SIGRTMIN+1	36) SIGRTMIN+2	37) SIGRTMIN+3
+38) SIGRTMIN+4	39) SIGRTMIN+5	40) SIGRTMIN+6	41) SIGRTMIN+7	42) SIGRTMIN+8
+43) SIGRTMIN+9	44) SIGRTMIN+10	45) SIGRTMIN+11	46) SIGRTMIN+12	47) SIGRTMIN+13
+48) SIGRTMIN+14	49) SIGRTMIN+15	50) SIGRTMAX-14	51) SIGRTMAX-13	52) SIGRTMAX-12
+53) SIGRTMAX-11	54) SIGRTMAX-10	55) SIGRTMAX-9	56) SIGRTMAX-8	57) SIGRTMAX-7
+58) SIGRTMAX-6	59) SIGRTMAX-5	60) SIGRTMAX-4	61) SIGRTMAX-3	62) SIGRTMAX-2
+63) SIGRTMAX-1	64) SIGRTMAX
+```
+
+
+
+The following table lists out common signals you might encounter and want to use in your programs −
+
+| Signal Name | Signal Number |                         Description                          |
+| :---------: | :-----------: | :----------------------------------------------------------: |
+|   SIGHUP    |       1       | Hang up detected on controlling terminal or death of controlling process |
+|   SIGINT    |       2       |   Issued if the user sends an interrupt signal (Ctrl + C)    |
+|   SIGQUIT   |       3       |      Issued if the user sends a quit signal (Ctrl + D)       |
+|   SIGFPE    |       8       |   Issued if an illegal mathematical operation is attempted   |
+|   SIGKILL   |       9       | If a process gets this signal it must quit immediately and will not perform any clean-up operations |
+|   SIGALRM   |      14       |             Alarm clock signal (used for timers)             |
+|   SIGTERM   |      15       |    Software termination signal (sent by kill by default)     |
+
+
+
+名称   默认动作      说明
+
+​		SIGHUP   终止进程   终端线路挂断
+
+　　SIGINT  终止进程   中断进程
+
+　　SIGQUIT  建立CORE文件 终止进程，并且生成core文件
+
+　　SIGILL  建立CORE文件    非法指令
+
+　　SIGTRAP  建立CORE文件    跟踪自陷
+
+　　SIGBUS  建立CORE文件    总线错误
+
+　　SIGSEGV  建立CORE文件    段非法错误
+
+　　SIGFPE  建立CORE文件    浮点异常
+
+　　SIGIOT  建立CORE文件    执行I/O自陷
+
+　　SIGKILL  终止进程   杀死进程
+
+　　SIGPIPE  终止进程   向一个没有读进程的管道写数据
+
+　　SIGALarm 终止进程   计时器到时
+
+　　SIGTERM  终止进程   软件终止信号
+
+　　SIGSTOP  停止进程   非终端来的停止信号
+
+　　SIGTSTP  停止进程   终端来的停止信号
+
+　　SIGCONT  忽略信号   继续执行一个停止的进程
+
+　　SIGURG  忽略信号   I/O紧急信号
+
+　　SIGIO   忽略信号   描述符上可以进行I/O
+
+　　SIGCHLD  忽略信号   当子进程停止或退出时通知父进程
+
+　　SIGTTOU  停止进程   后台进程写终端
+
+　　SIGTTIN  停止进程   后台进程读终端
+
+　　SIGXGPU  终止进程   CPU时限超时
+
+　　SIGXFSZ  终止进程   文件长度过长
+
+　　SIGWINCH 忽略信号   窗口大小发生变化
+
+　　SIGPROF  终止进程   统计分布图用计时器到时
+
+　　SIGUSR1  终止进程   用户定义信号1
+
+　　SIGUSR2  终止进程   用户定义信号2
+
+　　SIGVTALRM 终止进程   虚拟计时器到时
+
+　　1) SIGHUP 本信号在用户终端连接(正常或非正常)结束时发出, 通常是在终端的控制进程结束时, 通知同一session内的各个作业, 这时它们与控制终端不再关联.
+
+　　2) SIGINT 程序终止(interrupt)信号, 在用户键入INTR字符(通常是Ctrl-C)时发出
+
+　　3) SIGQUIT 和SIGINT类似, 但由QUIT字符(通常是Ctrl-\)来控制. 进程在因收到SIGQUIT退出时会产生core文件, 在这个意义上类似于一个程序错误信号.
+
+　　4) SIGILL 执行了非法指令. 通常是因为可执行文件本身出现错误, 或者试图执行数据段. 堆栈溢出时也有可能产生这个信号.
+
+　　5) SIGTRAP 由断点指令或其它trap指令产生. 由debugger使用.
+
+　　6) SIGABRT 程序自己发现错误并调用abort时产生.
+
+　　7) SIGIOT 在PDP-11上由iot指令产生, 在其它机器上和SIGABRT一样.
+
+　　8) SIGBUS 非法地址, 包括内存地址对齐(alignment)出错. eg: 访问一个四个字长的整数, 但其地址不是4的倍数.
+
+　　9) SIGFPE 在发生致命的算术运算错误时发出. 不仅包括浮点运算错误, 还包括溢出及除数为0等其它所有的算术的错误.
+
+　　10) SIGKILL 用来立即结束程序的运行. 本信号不能被阻塞, 处理和忽略.
+
+　　11) SIGUSR1 留给用户使用
+
+　　12) SIGSEGV 试图访问未分配给自己的内存, 或试图往没有写权限的内存地址写数据.
+
+　　13) SIGUSR2 留给用户使用
+
+　　14) SIGPIPE Broken pipe
+
+　　15) SIGALRM 时钟定时信号, 计算的是实际的时间或时钟时间. alarm函数使用该信号.
+
+　　16) SIGTERM 程序结束(terminate)信号, 与SIGKILL不同的是该信号可以被阻塞和处理. 通常用来要求程序自己正常退出. shell命令kill缺省产生这个信号.
+
+　　17) SIGCHLD 子进程结束时, 父进程会收到这个信号.
+
+　　18) SIGCONT 让一个停止(stopped)的进程继续执行. 本信号不能被阻塞. 可以用一个handler来让程序在由stopped状态变为继续执行时完成特定的工作. 例如, 重新显示提示符.
+
+
+
+### 捕获信号
+
+```shell
+trap [-lp] [[arg] signal_spec ...]
+```
+
+例：
+
+```shell
+ctrlc_count=0
+
+function no_ctrlc()
+{
+    let ctrlc_count++
+    echo
+    if [[ $ctrlc_count == 1 ]]; then
+        echo "Stop that."
+    elif [[ $ctrlc_count == 2 ]]; then
+        echo "Once more and I quit."
+    else
+        echo "That's it.  I quit."
+        exit
+    fi
+}
+
+trap no_ctrlc SIGINT
+
+while true
+do
+    echo Sleeping
+    sleep 10
+done
+```
+
+结果：
+
+```shell
+$ bash noctrlc.sh
+Sleeping
+^C
+Stop that.
+Sleeping
+^C
+Once more and I quit.
+Sleeping
+^C
+That's it.  I quit.
+```
+
+
+
+#### 忽略信号
+
+```shell
+trap '' signals
+```
+
+
+
+**注：The signals SIGKILL and SIGSTOP cannot be caught or ignored.**
+
+
+
+#### 清除捕获
+
+```shell
+trap - signal
+trap - signal1 signal2
+```
+
+例：
+
+For example, set a trap for rm command:
+
+```bash
+file=/tmp/test4563.txt
+trap 'rm $file' 1 2 3 15
+trap
+```
+
+To clear SIGINT (2), enter:
+
+```bash
+trap - SIGINT
+trap
+```
+
+To clear all traps, enter:
+
+```bash
+trap - 1 2 3 15
+trap
+```
+
+
+
+## &
+
+其作用是将该命令转到后台去执行。对于这样的命令，系统会创建一个sub-shell来运行这个命令。同时，在执行该行命令的shell环境中，这个命令会立刻返回0并且继续下面的shell命令的执行。除此之外，在执行这个命令之后，terminal上会输出创建的sub-shell的线程ID(PID)。
+
+```bash
+$ ./myscript.py &
+[1] 1337
+```
+
+注意按照这种方法分支出去的sub-shell的stdout会仍然关联到其parent-shell，也就是说你在当前的terminal中仍然可以发现这个后台进程的stdout输出。
+
+通过`&`分支出去的sub-shell的PID被存储在一个特殊的变量`$!`中，
+
+```bash
+$ echo $!
+1337
+```
+
+同时，也可以通过`jobs`命令来检查`sub-shell`的信息
+
+```bash
+$ jobs
+[1]+  Running                 ./myscript.py &
+```
+
+对于sub-shell，你可以通过`fg`命令将其拉回当前的terminal。
+
+如果有多个命令需要放到后台运行，可以采用如下方式：
+
+```bash
+./script.py & ./script2.py & ./script3.py & 
+```
+
+在这个例子中，三个脚本会同时开始运行，且拥有各自独立的sub-shell环境。在shell脚本中，这个方法常常被用来利用计算机的多核性能来加速执行。
+
+注：
+如果你想创建个完全和当前的shell独立的后台进程（而不是想上面提到的用`&`创建的，和当前shell的stdout关联的方法），可以使用`nohup`命令。
+
+
+
+## nohup
+
+`nohup`英文全称no hang up(不挂起)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。
+
+`nohup`命令，在默认情况下(非重定向时)，会输出一个名叫`nohup.out`的文件到当前目录下，如果当前目录的`nohup.out`文件不可写，输出重定向到`$HOME/nohup.out`文件中。
+
+
+
+### 语法格式
+
+```bash
+nohup Command [ Arg … ] [　& ]
+```
+
+参数说明：
+
+**Command**：要执行的命令。
+
+**Arg**：一些参数，可以指定输出文件。
+
+**&**：让命令在后台执行，终端退出后命令仍旧执行。
+
+
+
+## disown
+
+
+
+## strace
+
+**strace常用来跟踪进程执行时的系统调用和所接收的信号。**在Linux世界，进程不能直接访问硬件设备，当进程需要访问硬件设备，必须由用户态模式切换到内核态模式，通过系统调用访问硬件设备。strace可以跟踪到一个进程产生的系统调用，包括参数，返回值，执行消耗的时间。
+
+```shell
+root@ubuntu:/usr# strace cat /dev/null 
+execve("/bin/cat", ["cat", "/dev/null"], [/* 22 vars */]) = 0
+brk(0)                                  = 0xab1000
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f29379a7000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+...
+brk(0) = 0xab1000
+brk(0xad2000) = 0xad2000
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 0), ...}) = 0
+open("/dev/null", O_RDONLY) = 3
+fstat(3, {st_mode=S_IFCHR|0666, st_rdev=makedev(1, 3), ...}) = 0
+read(3, "", 32768) = 0
+close(3) = 0
+close(1) = 0
+close(2) = 0
+exit_group(0) = ?
+```
+
+每一行都是一条系统调用，等号左边是系统调用的函数名及其参数，右边是该调用的返回值。
+
+**strace显示这些调用的参数并返回符号形式的值。strace从内核接收信息，而且不需要以任何特殊的方式来构建内核。**
+
+
+
+### 参数
+
+```shell
+-c 统计每一系统调用的所执行的时间,次数和出错的次数等. 
+-d 输出strace关于标准错误的调试信息. 
+-f 跟踪由fork调用所产生的子进程. 
+-ff 如果提供-o filename,则所有进程的跟踪结果输出到相应的filename.pid中,pid是各进程的进程号. 
+-F 尝试跟踪vfork调用.在-f时,vfork不被跟踪. 
+-h 输出简要的帮助信息. 
+-i 输出系统调用的入口指针. 
+-q 禁止输出关于脱离的消息. 
+-r 打印出相对时间关于,,每一个系统调用. 
+-t 在输出中的每一行前加上时间信息. 
+-tt 在输出中的每一行前加上时间信息,微秒级. 
+-ttt 微秒级输出,以秒了表示时间. 
+-T 显示每一调用所耗的时间. 
+-v 输出所有的系统调用.一些调用关于环境变量,状态,输入输出等调用由于使用频繁,默认不输出. 
+-V 输出strace的版本信息. 
+-x 以十六进制形式输出非标准字符串 
+-xx 所有字符串以十六进制形式输出. 
+-a column 
+设置返回值的输出位置.默认 为40. 
+-e expr 
+指定一个表达式,用来控制如何跟踪.格式如下: 
+[qualifier=][!]value1[,value2]... 
+qualifier只能是 trace,abbrev,verbose,raw,signal,read,write其中之一.value是用来限定的符号或数字.默认的 qualifier是 trace.感叹号是否定符号.例如: 
+-eopen等价于 -e trace=open,表示只跟踪open调用.而-etrace!=open表示跟踪除了open以外的其他调用.有两个特殊的符号 all 和 none. 
+注意有些shell使用!来执行历史记录里的命令,所以要使用\\. 
+-e trace=set 
+只跟踪指定的系统 调用.例如:-e trace=open,close,rean,write表示只跟踪这四个系统调用.默认的为set=all. 
+-e trace=file 
+只跟踪有关文件操作的系统调用. 
+-e trace=process 
+只跟踪有关进程控制的系统调用. 
+-e trace=network 
+跟踪与网络有关的所有系统调用. 
+-e strace=signal 
+跟踪所有与系统信号有关的 系统调用 
+-e trace=ipc 
+跟踪所有与进程通讯有关的系统调用 
+-e abbrev=set 
+设定 strace输出的系统调用的结果集.-v 等与 abbrev=none.默认为abbrev=all. 
+-e raw=set 
+将指 定的系统调用的参数以十六进制显示. 
+-e signal=set 
+指定跟踪的系统信号.默认为all.如 signal=!SIGIO(或者signal=!io),表示不跟踪SIGIO信号. 
+-e read=set 
+输出从指定文件中读出 的数据.例如: 
+-e read=3,5 
+-e write=set 
+输出写入到指定文件中的数据. 
+-o filename 
+将strace的输出写入文件filename 
+-p pid 
+跟踪指定的进程pid. 
+-s strsize 
+指定输出的字符串的最大长度.默认为32.文件名一直全部输出. 
+-u username 
+以username 的UID和GID执行被跟踪的命令
+```
+
+
+
+### 实例
+
+```bash
+strace -o output.txt -T -tt -e trace=all -p 123456
+```
+
+上面的含义是：跟踪123456进程的所有系统调用，并统计系统调用的花费时间，以及开始时间，最后将记录结果存在output.txt文件里。
+
+
+
+
 
 ## 程序多版本管理
 
@@ -3918,7 +4339,7 @@ ps -l
 ps -axo user:30,pid,comm
 ```
 
-
+`comm`有的时候会显示不全启动命令，可以使用`cmd`代替
 
 
 
