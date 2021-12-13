@@ -2073,6 +2073,39 @@ apt-get install x-window-system-core gnome-core
 
 在启动时修改kernel启动参数，在后面添加`single`或数字`1`，会直接进入系统，之后使用命令`passwd root`
 
+
+
+## Login.conf/logind.conf.d 登录管理配置
+
+```bash
+/etc/systemd/logind.conf
+/etc/systemd/logind.conf.d/*.conf
+/run/systemd/logind.conf.d/*.conf
+/usr/lib/systemd/logind.conf.d/*.conf
+```
+
+
+
+### 描述
+
+这些文件配置`systemd`登录管理器`systemd-login.service`的各种参数。
+
+
+
+### 配置文件和优先级
+
+/etc/systemd/中的主配置文件包含注释掉的条目，这些条目显示默认值，作为管理员指南。可以通过编辑该文件或创建drop-in来创建本地覆盖，如下所述。建议在本地配置中使用drop-in，而不是修改主配置文件。
+
+除了主配置文件外，drop-in配置片段还从`/usr/lib/systemd/*.conf.d/`,`/usr/local/lib/systemd/*.conf.d/`,`/etc/systemd/*.conf.d/`读取，这些drop-in具有更高的优先级并覆盖主配置主配置文件中的`*.conf`文件。当多个文件指定相同的选项时，对于只接受单个值的选项，文件中最后排序的条目优先，而对于接受值列表的选项时，条目会在它们出现排序文件中时被收集。
+
+
+
+[systemd-logind.service (www.freedesktop.org)](https://www.freedesktop.org/software/systemd/man/systemd-logind.service.html)
+
+[logind.conf (www.freedesktop.org)](https://www.freedesktop.org/software/systemd/man/logind.conf.html)
+
+
+
 ## 关闭ASLR 基址随机
 
 方式1:
@@ -2154,23 +2187,23 @@ f1 f2 f3 f4 f5 program
 
 Linux系统通常都使用`cron`设置定时任务，但是systemd也有这个功能，而且优点显著。
 
-- 自动生成日志，配合systemd的日志工具，很方便除错
+- 自动生成日志，配合`systemd`的日志工具，很方便除错
 - 可以设置内存和CPU的使用额度，比如最多使用50%的CPU
-- 任务可以拆分，信赖其它systemd单元，完成非常复杂的任务
+- 任务可以拆分，信赖其它`systemd`单元，完成非常复杂的任务
 
 
 
 #### system单元
 
-单元就是systemd的最小功能单位，是单个进程的描述。一个个小的单元相互信赖，组成一个庞大的任务管理系统，这主湜systemd的基本思想。
+单元就是`systemd`的最小功能单位，是单个进程的描述。一个个小的单元相互信赖，组成一个庞大的任务管理系统，这是`systemd`的基本思想。
 
-由于systemd要做的事情太多，导致单元有很多不同的种类，大概有12种。举例来说，Service单元负责后台服务，Timer单元负责定时器，Slice单元负责资源的分配。
+由于`systemd`要做的事情太多，导致单元有很多不同的种类，大概有12种。举例来说，`Service`单元负责后台服务，`Timer`单元负责定时器，Slice单元负责资源的分配。
 
 每个单元都有一个单元描述文件，它们分散在三个目录：
 
-- /lib/systemd/system:系统默认的单元文件
-- /etc/systemd/system:用户安装的软件的单元文件
-- /usr/lib/systemd/system:用户自己定义的单元文件
+- `/lib/systemd/system`:系统默认的单元文件
+- `/etc/systemd/system`:用户安装的软件的单元文件
+- `/usr/lib/systemd/system`:用户自己定义的单元文件
 
 下面的命令可以查看所有的单元文件：
 
@@ -2216,7 +2249,7 @@ systemctl disable [UnitName]
 
 #### Service单元
 
-Service单元就是所要执行的任务，比如发送邮件就是一种Service。
+`Service`单元就是所要执行的任务，比如发送邮件就是一种Service。
 
 例：
 
@@ -2232,11 +2265,11 @@ ExecStart=/bin/bash /path/to/mail.sh
 
 **注意：其中的程序路径都要写成绝对路径，比如`bash`要写成`/bin/bash`，否则systemd找不到。**
 
-可以看到，这个Service单元文件分成两个部分。
+可以看到，这个`Service`单元文件分成两个部分。
 
-[Unit]部分介绍单元的基本信息(即元数据)，`Description`字段给出这个单元的简单介绍；
+`[Unit]`部分介绍单元的基本信息(即元数据)，`Description`字段给出这个单元的简单介绍；
 
-[Service]部分用来定制行为，Systemd提供许多字段：
+`[Service]`部分用来定制行为，`Systemd`提供许多字段：
 
 - ExecStart : systemctl start
 - ExecStop : systemctl stop
@@ -2255,7 +2288,7 @@ sudo systemctl start mytimer.service
 
 #### Timer单元
 
-Service单元只是定义了如何执行任务，要定时执行这个Service，还必须定义Timer单元。
+Service单元只是定义了如何执行任务，要定时执行这个Service，还必须定义`Timer`单元。
 
 `/usr/lib/systemd/system`目录里面，新建一个`mytimer.timer`文件，写入下面的内容：
 
@@ -2271,7 +2304,7 @@ Unit=mytimer.service
 WantedBy=multi-user.target
 ```
 
-这个 Timer 单元文件分成几个部分。
+这个 `Timer` 单元文件分成几个部分。
 
 `[Unit]`部分定义元数据。
 
@@ -2298,7 +2331,7 @@ WantedBy=multi-user.target
 
 上面脚本中，`[Install]`部分只写了一个字段，即`WantedBy=multi-user.target`。它的意思是，如果执行了`systemctl enable mytimer.timer`（只要开机，定时器自动生效），那么该定时器归属于`multi-user.target`。
 
-所谓 Target 指的是一组相关进程，有点像 init 进程模式下面的启动级别。启动某个Target 的时候，属于这个 Target 的所有进程都会全部启动。
+所谓 Target 指的是一组相关进程，有点像 `init` 进程模式下面的启动级别。启动某个Target 的时候，属于这个 Target 的所有进程都会全部启动。
 
 `multi-user.target`是一个最常用的 Target，意为多用户模式。也就是说，当系统以多用户模式启动时，就会一起启动`mytimer.timer`。它背后的操作其实很简单，执行`systemctl enable mytimer.timer`命令时，就会在`multi-user.target.wants`目录里面创建一个符号链接，指向`mytimer.timer`。
 
@@ -3870,7 +3903,7 @@ dr-xr-xr-x   4 root root 4096 Apr 19  2012 boot
 
 
 
-### 文件重定向
+## 文件重定向
 
 在shell脚本中，默认情况下，总有3个文件处于打开状态，标准输入(键盘输入)、标准输出(输出到屏幕)、标准错误(也是输出到屏幕)，它们分别对应的文件描述符是0(stdin)，1(stdout)，2(stderr).
 
@@ -3883,6 +3916,76 @@ dr-xr-xr-x   4 root root 4096 Apr 19  2012 boot
 `/dev/null`是一个文件，这个文件比较特殊，所有传给它的东西都丢弃掉
 
 `command < file`将文件中的内容作为输入
+
+
+
+### Shell 重定向 2>&1 含义说明
+
+```bash
+$ command > file 2>&1
+$ command >> file 2>&1
+```
+
+这里的`&`没有固定的意思
+
+放在`>`后面的`&`，表示重定向的目标不是一个文件，而是一个文件描述符
+
+```bash
+1 => stdout
+2 => stderr
+0 => stdin
+```
+
+换言之 **2>1** 代表将**stderr**重定向到当前路径下文件名为**1**的**regular file**中，而**2>&1**代表将**stderr**重定向到**文件描述符**为**1**的文件(即**/dev/stdout**)中，这个文件就是**stdout**在**file system**中的映射
+
+而**&>file**是一种特殊的用法，也可以写成**>&file**，二者的意思完全相同，都等价于
+
+```bash
+>file 2>&1
+```
+
+此处**&>**或者**>&**视作整体，分开没有单独的含义
+
+
+
+**顺序问题：**
+
+```bash
+find /etc -name .bashrc > list 2>&1
+# 我想问为什么不能调下顺序,比如这样
+find /etc -name .bashrc 2>&1 > list
+```
+
+这个是从左到右有顺序的
+
+第一种
+
+```bash
+xxx > list 2>&1
+```
+
+先将要输出到**stdout**的内容重定向到文件，此时文件**list**就是这个程序的**stdout**，再将**stderr**重定向到**stdout**，也就是文件**list**
+
+第二种
+
+```bash
+xxx 2>&1 > list
+```
+
+先将要输出到**stderr**的内容重定向到**stdout**，此时会产生一个**stdout的拷贝**，作为程序的**stderr**，而程序原本要输出到**stdout**的内容，依然是对接在**stdout原身**上的，因此第二步重定向**stdout**，对**stdout的拷贝**不产生任何影响（不好理解，记住这样用，错误输出不会被重定向到文件就行了）
+
+引自 http://www.gnu.org/software/bash/manual/bashref.html#Redirections
+
+> Note that the order of redirections is significant. For example, the
+> command
+>
+> ls > dirlist 2>&1 directs both standard output (file descriptor 1) and
+> standard error (file descriptor 2) to the file dirlist, while the
+> command
+>
+> ls 2>&1 > dirlist directs only the standard output to file dirlist,
+> because the standard error was made a copy of the standard output
+> before the standard output was redirected to dirlist.
 
 
 
@@ -3916,13 +4019,13 @@ The following table lists out common signals you might encounter and want to use
 
 | Signal Name | Signal Number |                         Description                          |
 | :---------: | :-----------: | :----------------------------------------------------------: |
-|   SIGHUP    |       1       | Hang up detected on controlling terminal or death of controlling process |
-|   SIGINT    |       2       |   Issued if the user sends an interrupt signal (Ctrl + C)    |
-|   SIGQUIT   |       3       |      Issued if the user sends a quit signal (Ctrl + D)       |
-|   SIGFPE    |       8       |   Issued if an illegal mathematical operation is attempted   |
-|   SIGKILL   |       9       | If a process gets this signal it must quit immediately and will not perform any clean-up operations |
-|   SIGALRM   |      14       |             Alarm clock signal (used for timers)             |
-|   SIGTERM   |      15       |    Software termination signal (sent by kill by default)     |
+|  `SIGHUP`   |       1       | Hang up detected on controlling terminal or death of controlling process |
+|  `SIGINT`   |       2       |   Issued if the user sends an interrupt signal (Ctrl + C)    |
+|  `SIGQUIT`  |       3       |      Issued if the user sends a quit signal (Ctrl + D)       |
+|  `SIGFPE`   |       8       |   Issued if an illegal mathematical operation is attempted   |
+|  `SIGKILL`  |       9       | If a process gets this signal it must quit immediately and will not perform any clean-up operations |
+|  `SIGALRM`  |      14       |             Alarm clock signal (used for timers)             |
+|  `SIGTERM`  |      15       |    Software termination signal (sent by kill by default)     |
 
 
 
@@ -4118,18 +4221,46 @@ trap
 
 
 
+### 查看进程忽略信号
+
+```bash
+cat /proc/<pid>status | grep SigIgn
+```
+
+例：
+
+```bash
+root@ubuntu:~# nohup sleep 500 &
+[1] 161051
+root@ubuntu:~# nohup: ignoring input and appending output to 'nohup.out'
+
+root@ubuntu:~# ps aux | grep sleep
+root      161051  0.0  0.0  16148   464 pts/1    S    18:37   0:00 sleep 500
+root      161068  0.0  0.0  17200   688 pts/1    S+   18:37   0:00 grep --color=auto sleep
+root@ubuntu:~# cat /proc/161051/status | grep Sig
+SigQ:	0/7472
+SigPnd:	0000000000000000
+SigBlk:	0000000000000000
+SigIgn:	0000000000000001
+SigCgt:	0000000000000000
+```
+
+
+
+
+
 ## &
 
-其作用是将该命令转到后台去执行。对于这样的命令，系统会创建一个sub-shell来运行这个命令。同时，在执行该行命令的shell环境中，这个命令会立刻返回0并且继续下面的shell命令的执行。除此之外，在执行这个命令之后，terminal上会输出创建的sub-shell的线程ID(PID)。
+其作用是将该命令转到后台去执行。对于这样的命令，系统会创建一个`sub-shell`来运行这个命令。同时，在执行该行命令的shell环境中，这个命令会立刻返回`0`并且继续下面的shell命令的执行。除此之外，在执行这个命令之后，`terminal`上会输出创建的`sub-shell`的线程ID(PID)。
 
 ```bash
 $ ./myscript.py &
 [1] 1337
 ```
 
-注意按照这种方法分支出去的sub-shell的stdout会仍然关联到其parent-shell，也就是说你在当前的terminal中仍然可以发现这个后台进程的stdout输出。
+注意按照这种方法分支出去的`sub-shell`的`stdout`会仍然关联到其`parent-shell`，也就是说你在当前的terminal中仍然可以发现这个后台进程的`stdout`输出。
 
-通过`&`分支出去的sub-shell的PID被存储在一个特殊的变量`$!`中，
+通过`&`分支出去的`sub-shell`的`PID`被存储在一个特殊的变量`$!`中，
 
 ```bash
 $ echo $!
@@ -4151,16 +4282,16 @@ $ jobs
 ./script.py & ./script2.py & ./script3.py & 
 ```
 
-在这个例子中，三个脚本会同时开始运行，且拥有各自独立的sub-shell环境。在shell脚本中，这个方法常常被用来利用计算机的多核性能来加速执行。
+在这个例子中，三个脚本会同时开始运行，且拥有各自独立的`sub-shell`环境。在shell脚本中，这个方法常常被用来利用计算机的多核性能来加速执行。
 
 注：
-如果你想创建个完全和当前的shell独立的后台进程（而不是想上面提到的用`&`创建的，和当前shell的stdout关联的方法），可以使用`nohup`命令。
+如果你想创建个完全和当前的shell独立的后台进程（而不是想上面提到的用`&`创建的，和当前`shell`的`stdout`关联的方法），可以使用`nohup`命令。
 
 
 
 ## nohup
 
-`nohup`英文全称no hang up(不挂起)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。
+`nohup`英文全称`no hang up`(不挂起)，用于在系统后台不挂断地运行命令，退出终端不会影响程序的运行。
 
 `nohup`命令，在默认情况下(非重定向时)，会输出一个名叫`nohup.out`的文件到当前目录下，如果当前目录的`nohup.out`文件不可写，输出重定向到`$HOME/nohup.out`文件中。
 
@@ -4182,13 +4313,166 @@ nohup Command [ Arg … ] [　& ]
 
 
 
+## jobs
+
+跟作业相关的命令有很多，比如：
+
+- `jobs`：用来查看后台执行的任务
+- `fg`：用来将后台中的命令调到前台继续执行
+- `bg`：用来将一个后台暂停的命令，继续执行
+- `Ctrl-Z`：通过发送`SIGTSTP`信号暂停在前台运行的进程
+
+例：
+
+```bash
+# 列出当前任务，当前无任务
+$ jobs -l
+
+# 暂停前台的进程，并放到后台 [ctrl - z]
+$ ./ip_check.sh
+192.168.1.1 is up
+192.168.1.2 is down
+^Z
+[1]+ Stopped				./ip_check.sh
+
+# 列出任务
+$ jobs -l
+[1]+ 28458 Stopped			./ip_check.sh
+
+# 将后台暂停的作业继续执行
+$ bg 1
+[1]+ ./ip_check.sh &
+$ 192.168.1.3 id down
+192.168.1.4 up
+
+
+# 将任务放置到后台执行
+$ ./ip_check.sh > /dev/null 2>&1 &
+[1] 12345
+
+# 将作业放置到前台执行
+$ fg 1
+./ip_check.sh > /dev/null 2>&1
+```
+
+
+
 ## disown
+
+从当前的shell中移除作业。
+
+```bash
+disown [-h] [-ar] [jobspec ... | pid ...]
+```
+
+### 主要用途
+
+- 从当前shell的作业列表中移除全部作业。
+- 从当前shell的作业列表中移除指定的一到多个作业。
+- 从当前shell的作业列表中移除正在运行的作业。
+- 标记作业，使得它们在当前shell退出后也不会结束。
+
+### 选项
+
+```shell
+-h    标记每个作业标识符，这些作业将不会在shell接收到sighup信号时接收到sighup信号。
+-a    移除所有的作业。
+-r    移除运行的作业。
+```
+
+### 参数
+
+jobspec（可选）：要移除的作业标识符，可以是一到多个。
+
+pid（可选）：要移除的作业对应的进程ID，可以是一到多个。
+
+### 返回值
+
+返回成功除非未开启作业控制或执行出现错误。
+
+
+
+### 例子
+
+```shell
+# 演示。
+[user2@pc] ssh 192.168.1.4
+user2@192.168.1.4's password:
+# 此时按下ctrl+z使得交互停止。
+[1]+  Stopped                 ssh 192.168.1.4
+
+[user2@pc] ssh 192.168.1.7
+user2@192.168.1.7's password:
+# 此时按下ctrl+z使得交互停止。
+[1]+  Stopped                 ssh 192.168.1.7
+
+[user2@pc] sleep 120 &
+[3] 28986
+
+# 列出作业及pid信息。
+[user2@pc] jobs -l
+[1]- 28756 Stopped                 ssh 192.168.1.4
+[2]+ 28833 Stopped                 ssh 192.168.1.7
+[3]  28986 Running                 sleep 120 &
+
+# 删除运行状态的作业。
+[user2@pc] disown -r
+
+[user2@pc] jobs -l
+[1]- 28756 Stopped                 ssh 192.168.1.4
+[2]+ 28833 Stopped                 ssh 192.168.1.7
+
+# 注意disown只是移除作业，并没有停止。
+[user2@pc] pgrep -a -u user2 -f 'sleep 120'
+28986 sleep 120
+
+# 删除指定的作业。
+[user2@pc] disown %2
+bash: warning: deleting stopped job 2 with process group 28833
+
+[user2@pc] jobs -l
+[1]- 28756 Stopped                 ssh 192.168.1.4
+
+# 注意disown只是移除作业，并没有停止。
+[user2@pc] pgrep -a -u user2 -f 'ssh 192.168.1.7'
+28833 ssh 192.168.1.7
+
+# 删除全部作业。
+[user2@pc] disown -a
+bash: warning: deleting stopped job 1 with process group 28756
+
+[user2@pc] jobs -l
+
+# 注意disown只是移除作业，并没有停止。
+[user2@pc] pgrep -a -u user2 -f 'ssh 192.168.1.4'
+28756 ssh 192.168.1.4
+# 演示-h选项的作用。
+[user2@pc] sleep 90 &
+[1] 109080
+
+[user2@pc] jobs -l
+[1]+ 109080 Running                 sleep 90 &
+
+[user2@pc] disown -h %1
+
+[user2@pc] exit
+
+# 此时前一个终端已经关闭，现在打开新终端查找该作业。
+[user2@pc] pgrep -a -u user2 -f 'sleep 90'
+109080 sleep 90
+```
+
+### 注意
+
+1. `bash`的作业控制命令包括`bg fg kill wait disown suspend`。
+2. 该命令需要`set`选项`monitor`处于开启状态时才能执行；查看作业控制状态：输入`set -o`查看`monitor`行；执行`set -o monitor`或`set -m`开启该选项。
+3. 该命令是bash内建命令，相关的帮助信息请查看`help`命令。
 
 
 
 ## strace
 
-**strace常用来跟踪进程执行时的系统调用和所接收的信号。**在Linux世界，进程不能直接访问硬件设备，当进程需要访问硬件设备，必须由用户态模式切换到内核态模式，通过系统调用访问硬件设备。strace可以跟踪到一个进程产生的系统调用，包括参数，返回值，执行消耗的时间。
+**strace常用来跟踪进程执行时的系统调用和所接收的信号。**在Linux世界，进程不能直接访问硬件设备，当进程需要访问硬件设备，必须由用户态模式切换到内核态模式，通过系统调用访问硬件设备。`strace`可以跟踪到一个进程产生的系统调用，包括参数，返回值，执行消耗的时间。
 
 ```shell
 root@ubuntu:/usr# strace cat /dev/null 
@@ -4212,7 +4496,7 @@ exit_group(0) = ?
 
 每一行都是一条系统调用，等号左边是系统调用的函数名及其参数，右边是该调用的返回值。
 
-**strace显示这些调用的参数并返回符号形式的值。strace从内核接收信息，而且不需要以任何特殊的方式来构建内核。**
+**`strace`显示这些调用的参数并返回符号形式的值。`strace`从内核接收信息，而且不需要以任何特殊的方式来构建内核。**
 
 
 
@@ -4285,9 +4569,7 @@ qualifier只能是 trace,abbrev,verbose,raw,signal,read,write其中之一.value�
 strace -o output.txt -T -tt -e trace=all -p 123456
 ```
 
-上面的含义是：跟踪123456进程的所有系统调用，并统计系统调用的花费时间，以及开始时间，最后将记录结果存在output.txt文件里。
-
-
+上面的含义是：跟踪`123456`进程的所有系统调用，并统计系统调用的花费时间，以及开始时间，最后将记录结果存在`output.txt`文件里。
 
 
 
@@ -4295,7 +4577,7 @@ strace -o output.txt -T -tt -e trace=all -p 123456
 
 见`系统`章节
 
-## 查看系统中所有的进程
+## ps
 
 ```shell
 ps aux
@@ -4316,7 +4598,7 @@ ps aux
 - -l：长格式显示更加详细的信息；
 - -e：显示所有进程；
 
-## 查看系统所有的进程，而且可以看到父进程和进程优先级
+### 查看系统所有的进程，而且可以看到父进程和进程优先级
 
 ```shell
 ps -le
@@ -4324,7 +4606,7 @@ ps -le
 
 
 
-## 查看当前shell产生的进程
+### 查看当前shell产生的进程
 
 ```shell
 ps -l
@@ -4332,7 +4614,7 @@ ps -l
 
 
 
-## 自定义进程打印
+### 自定义进程打印
 
 ```shell
 # 如果用户名过长的话，一般只会打印前8个字符，后面会用+表示，user:30表示用户名可显示30个字符长度
