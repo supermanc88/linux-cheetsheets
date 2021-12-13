@@ -2889,6 +2889,83 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 
 
 
+## vfs_read
+
+函数的原型如下：
+
+```c
+ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos);
+```
+
+参数说明：
+
+file：函数filp_open()调用后返回的struct file *结构指针；
+
+buf：buf缓冲区，用来存储读取到的数据，该参数具有__user进行修饰，表明buf指向用户空间地址，如果传入内核空间地址时，就会出错，并返回-EFAULT；
+
+count：要读取的数据字节个数；
+
+pos：返回数据读取后的文件指针。
+
+返回值：
+
+文件读取成功时，返回读取到字节数，如果失败，返回负的错误号。
+
+
+
+## vfs_write
+
+函数的原型如下：
+
+```c
+ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_t *pos)
+```
+
+参数说明：
+
+file：函数filp_open()调用后返回的struct file *结构指针；
+
+buf：buf缓冲区，用来存储要写入文件中的数据，该参数具有__user进行修饰，表明buf指向用户空间地址，如果传入内核空间地址时，就会出错，并返回-EFAULT；
+
+count：要写入的数据字节个数；
+
+pos：返回数据写入后的文件指针。
+
+返回值：
+
+文件写入成功时，返回写入到的字节个数，如果失败，返回负的错误号。
+
+注意：
+
+对于vfs_read()和vfs_write()函数，参数buf是使用__user进行修饰的，表明buf指向用户空间地址，由于函数是在内核态中使用，因此，需要使用函数改变kernel对内存地址检查的处理方式，可以使用下面的函数：
+
+```c
+static inline void set_fs(mm_segment_t fs)
+```
+
+对于set_fs()函数中的参数fs，具有两个取值，分别是USER_DS和KERNEL_DS，分别代表了用户空间和内核空间，在默认情况下，内核取值为USER_FS，也就是对用户空间地址检查并变换，因此，需要使用
+
+```c
+set_fs(KERNEL_DS)
+```
+
+进行转换，改变kernel对内核空间地址检查，防止函数调用时出错，该函数的一般用法如下：
+
+```c
+filp_open();
+mm_segment_t old_fs;
+old_fs = get_fs();
+set_fs(KERNEL_DS);
+...
+...   /* 内存相关的操作 */
+... 
+set_fs(old_fs);
+```
+
+
+
+
+
 # 内核内存分配
 
 [图解slub (wowotech.net)](http://www.wowotech.net/memory_management/426.html)
