@@ -808,6 +808,15 @@ brew install qemu
 
 # 设置网卡
 -net nic -net tap,ifname=tap0,script=no,downscript=no
+
+# 无图形界面
+-nographic
+
+# 在开机时暂停
+-S
+
+# gdbserver tcp:1234
+-s
 ```
 
 
@@ -1808,6 +1817,8 @@ target remote /dev/ttyS0
 
 ### crash
 
+1. 安装
+
 ```shell
 /var/crash/
 
@@ -1819,6 +1830,73 @@ yum install crash
 
 # 配置：
 kdump-config show
+```
+
+2. 下载debuginfo
+
+**`crash`调试需要`kernel-debuginfo`**
+
+```bash
+# centos
+yum install kernel-debuginfo kernel-debuginfo-common
+```
+
+3. 调试dump
+
+```bash
+crash /usr/lib/debug/lib/modules/`uname -r`/vmlinux /var/crash/time/vmcore
+```
+
+
+
+#### 调试命令(待补)
+
+
+
+### kdump
+
+#### centos
+
+1. 安装
+
+```bash
+# 安装kdump工具
+yum install kexec-tools
+```
+
+2. 配置grub
+
+```bash
+vim /boot/grub/grub.conf
+
+# 在启动参数后添加
+crashkernel=256M
+# 或
+crashkernel=auto
+```
+
+3. 重启系统
+
+```bash
+reboot
+```
+
+4. 查看kdump服务状态
+
+```bash
+service kdump status
+
+# 正确启动输出如下：
+Kdump is operational
+
+# 如果没有启动
+service kdump start
+
+# 查看是否开机自启
+chkconfig --list | grep kdump
+
+# 如果没加入启动项，则加入
+chkconfig kdump on
 ```
 
 
@@ -2064,6 +2142,95 @@ apt-get install x-window-system-core gnome-core
 
 
 # 系统
+
+
+
+## 服务/service
+
+### chkconfig
+
+此命令是`Red Hat`公司遵循GPL规则所开发的程序，它可查询操作系统在每一个执行等级中会执行哪些系统服务，其中包括种类常驻服务。
+
+`chkconfig`命令主要用来更新(启动或停止)和查询系统服务的运行级信息。谨记`chkconfig`不是立即自动禁止或激活一个服务，它只是简单的改变了符号连接。
+
+#### 语法
+
+```bash
+chkconfig [--add][--del][--list][系统服务]
+chkconfig [--level <等级代号>][系统服务][on/off/reset]
+```
+
+`chkconfig`在没有参数运行时，显示用法。
+
+如果加上服务名，那么就检查这个服务是否在当前运行级启动。如果是，返回`true`，否则返回`false`。
+
+如果在服务名后面指定了`on`，`off`或`reset`，那么`chkconfig`会改变指定服务的启动信息。`on`和`off`分别指服务被启动或停止，`reset`指重置服务的启动信息，无论有问题的初始化脚本指定了什么。
+
+`on`和`off`开关，系统默认只对运行级`3，4，5`有效，但是`reset`可以对所有运行级有效。
+
+
+
+#### 参数
+
+- `--add`：增加所指定的系统服务，让`chkconfig`指令得以管理它，并同时在系统启动的叙述文件内增加相关数据
+- `--del`：删除所指定的系统服务，不再由`chkconfig`管理，并同时在系统启动的叙述文件内删除相关数据
+- `--level <等级代号>`：指定系统服务要在哪一个执行等级中开启或关闭
+
+
+
+#### 运行级文件
+
+每个被`chkconfig`管理的服务需要在对应的`init.d`下的脚本加上两行或者更多行的注释。第一行告诉`chkconfig`缺省启动的运行级以及启动和停止的优先级。如果某服务缺省不在任何运行级启动，那么使用`-`代替运行级。第二行对服务进行描述，可以用`\`跨行注释。
+
+例如，`random.init`包含3行：
+
+```bash
+# chkconfig: 2345 20 80
+# description: Saves and restores system entropy pool for \
+# higher quality random number generation.
+```
+
+
+
+#### 示例
+
+```bash
+# 列出所有的系统服务
+chkconfig --list
+
+# 增加httpd服务
+chkconfig --add httpd
+
+# 删除httpd服务
+chkconfig --del httpd
+
+# 设置httpd在运行级别为2、3、4、5的情况下都是on（开启）的状态
+chkconfig --level httpd 2345 on
+
+# 列出系统所有的服务启动情况
+chkconfig --list
+
+# 列出mysqld服务设置情况
+chkconfig --list mysqld
+
+# 设定mysqld在等级3和5为开机运行服务，--level 35表示操作只在等级3和5执行，on表示启动，off表示关闭
+chkconfig --level 35 mysqld on
+
+# 设定mysqld在各等级为on，“各等级”包括2、3、4、5等级
+chkconfig mysqld on
+```
+
+
+
+
+
+#### 如何增加一个服务
+
+1. 服务脚本必须存放在`/etc/ini.d/`目录下；
+2. `chkconfig --add servicename`
+     在`chkconfig`工具服务列表中增加此服务，此时服务会被在`/etc/rc.d/rcN.d`中赋予`K/S`入口了；
+3. `chkconfig --level 35 mysqld on`
+     修改服务的默认启动等级。
 
 
 
@@ -2476,7 +2643,7 @@ cat /proc/cpuinfo
 
 
 
-## screenfetch
+### screenfetch
 
 ```shell
 # 以arch为例
@@ -2488,29 +2655,6 @@ pacman -S screenfetch
 ![image-20211015102016337](images/Linux常用命令/image-20211015102016337.png)
 
 
-
-## swap 交换分区 虚拟内存
-
-```shell
-dd if=/dev/zero of=/data/swap bs=512 count=8388616		//将zero设备作为输出，写入swap，count写入多少次，这里一共写入4G，如果没有swap会自动创建
-mkswap /data/swap	//设置swap为交换区
-swapon /data/swap		//启用
-echo "/data/swap swap swap defaults    0  0" >> /etc/fstab	//开机引导时会自动启动
-```
-
-查看是否生效:
-
-```shell
-free -m		//可以看到swap分区
-```
-
-关闭：
-
-```shell
-swapoff /data/swap
-swapoff -a >/dev/null
-rm -rf /data/swap
-```
 
 
 
@@ -5530,6 +5674,31 @@ quit
 
 
 # 内存
+
+## swap 交换分区 虚拟内存
+
+```shell
+dd if=/dev/zero of=/data/swap bs=512 count=8388616		//将zero设备作为输出，写入swap，count写入多少次，这里一共写入4G，如果没有swap会自动创建
+mkswap /data/swap	//设置swap为交换区
+swapon /data/swap		//启用
+echo "/data/swap swap swap defaults    0  0" >> /etc/fstab	//开机引导时会自动启动
+```
+
+查看是否生效:
+
+```shell
+free -m		//可以看到swap分区
+```
+
+关闭：
+
+```shell
+swapoff /data/swap
+swapoff -a >/dev/null
+rm -rf /data/swap
+```
+
+
 
 ## 查看内存信息
 
