@@ -1604,6 +1604,97 @@ set substitute-path /root/rpmbuild/SOURCES/linux-2.6.32-754.el6/ /home/superman/
 
 
 
+## coredump
+
+### 概念
+
+> coredump叫做核心转储，它是进程运行时在突然崩溃的那一刻的一个内存快照。操作系统在程序发生异常而异常在进程内部又没有被捕获的情况下，会把进程此刻内存、寄存器状态、运行堆栈等信息转储保存在一个文件里。
+>
+> 该文件也是二进制文件，可以使用gdb、elfdump、objdump或者windows下的windebug、solaris下的mdb进行打开分析里面的具体内容。
+
+
+
+ulimit -c 可以设置core文件的大小，如果这个值为0，则不会产生core文件。这个值太小，则core文件也不会产生，因为core文件一般都比较大。
+
+使用ulimit -c unlimited来设置无限大，则任意情况下都会产生core文件。
+
+ulimit -a可以查看当前core文件限制。
+
+```bash
+root@kerneldev:~# ulimit -c
+0
+root@kerneldev:~# ulimit -a
+core file size          (blocks, -c) 0
+data seg size           (kbytes, -d) unlimited
+scheduling priority             (-e) 0
+file size               (blocks, -f) unlimited
+pending signals                 (-i) 31350
+max locked memory       (kbytes, -l) 1014987
+max memory size         (kbytes, -m) unlimited
+open files                      (-n) 1024
+pipe size            (512 bytes, -p) 8
+POSIX message queues     (bytes, -q) 819200
+real-time priority              (-r) 0
+stack size              (kbytes, -s) 8192
+cpu time               (seconds, -t) unlimited
+max user processes              (-u) 31350
+virtual memory          (kbytes, -v) unlimited
+file locks                      (-x) unlimited
+```
+
+
+
+### 配置
+
+1. 设置core文件的名称和文件路径
+
+默认生成路径：输入可执行文件运行命令的同一路径下
+
+默认生成名字：默认命名为core。新的core文件会覆盖旧的core文件
+
+2. 设置pid作为文件扩展名
+
+```bash
+echo "1" > /proc/sys/kernel/core_uses_pid
+# 或
+sysctl -w kernel.core_uses_pid=1 kernel.core_uses_pid = 1
+```
+
+- 1:添加pid作为扩展名，生成的core文件名称为core.pid
+- 0:不添加pid作为扩展名，生成的core文件名称为core
+
+3. 控制core文件保存位置和文件名格式
+
+```bash
+echo "/corefile/core-%e-%p-%t" > /proc/sys/kernel/core_pattern
+#或
+sysctl -w kernel.core_pattern=/corefile/core-%e-%p-%t kernel.core_pattern = /corefile/core-%e-%p-%t
+```
+
+上面的命令可以将core文件统一生成到`/corefile`目录下，产生的文件名为`core-命令名-pid-时间戳`
+
+以下是参数：
+
+- %p：insert pid into filename 添加pid(进程id)
+- %u：insert current uid into filename 添加当前uid(用户id)
+- %g：insert current gid into filename 添加当前gid(用户组id)
+- %s：insert signal that caused the coredump into the filename 添加导致产生core的信号
+- %t：insert UNIX time that the coredump occurred into filename 添加core文件生成时的unix时间
+- %h：insert hostname where the coredump happened into filename 添加主机名
+- %e：insert coredumping executable name into filename 添加导致产生core的命令名
+
+
+
+### 调试命令
+
+```bash
+gdb dumptest corefile
+```
+
+
+
+
+
 ## 内核调试
 
 ### 双机调试
@@ -2268,6 +2359,10 @@ chkconfig mysqld on
 [systemd-logind.service (www.freedesktop.org)](https://www.freedesktop.org/software/systemd/man/systemd-logind.service.html)
 
 [logind.conf (www.freedesktop.org)](https://www.freedesktop.org/software/systemd/man/logind.conf.html)
+
+
+
+[logind.conf 中文手册 [金步国\] (jinbuguo.com)](http://www.jinbuguo.com/systemd/logind.conf.html)
 
 
 
@@ -3120,6 +3215,46 @@ sudo yum makecache
 ### pam
 
 
+
+
+
+## SELinux
+
+### CentOS7
+
+1. 查询SELinux状态
+
+方法1:
+
+```bash
+getenforce
+```
+
+默认显示`Enforcing`，如果是关闭则显示`Disable`
+
+方法2:
+
+```bash
+/usr/sbin/sestatus -v
+```
+
+第一行默认显示`SELinux status: enable`
+
+2. 临时关闭
+
+```bash
+setenforce 0
+```
+
+3. 永久关闭
+
+```bash
+vi /etc/selinux/config
+```
+
+将文件中的`SELINUX=enforcing`改为`SELINUX=disable`
+
+然后重启机器生效
 
 
 
