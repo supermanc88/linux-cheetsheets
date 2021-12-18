@@ -3823,3 +3823,27 @@ EXPORT_SYMBOL_GPL(device_create);
 **对`char`类型格式化为16进制为什么会出现`FFFFFF`**
 
 C89标准规定，short和char会被自动提升为int（整形化，类似地，float也会自动提升为double），这样做是为了便于编译器进行优化，使变量的长度尽可能一样，尽可能提升所产生代码的效率。data[i]的值当它是正数的时候也同样进行了符号扩展的，只不过正数是前面加0，用%02x打印的时候那些0被忽略；而补码表示的负数的符号扩展却是前面加1，用%02x打印的时候那些1不能被忽略，因此才按照本来的长度输出来。如没有添加unsigned，则当data[i]>0x7F时（如0X80），格式转换为FFFFFF80！
+
+
+
+
+
+# 应用层开发
+
+## 环境变量
+
+### setenv/unsetenv/putenv/getenv
+
+```c
+#include <stdlib.h>
+
+int setenv(const char *name, const char *value, int overwrite);
+
+int unsetenv(const char *name);
+
+// 以 name=value 的格式
+int putenv(char *string);
+
+char *getenv(const char *name);
+```
+

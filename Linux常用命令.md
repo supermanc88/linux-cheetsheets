@@ -1324,7 +1324,9 @@ yum install gcc gcc-c++ cmake
 
 ## CMake 开发环境
 
-### 重命名
+二进制下载：https://github.com/Kitware/CMake
+
+### 生成重命名
 
 ```cmake
 # 修改字首
@@ -1465,9 +1467,18 @@ gcc -o test test.c -L/libpath/ -ltest1 /libpath/libtest2.a
 
 
 
+## 安装aarch工具链/交叉编译
+
+```shell
+# 以Ubuntu16.04安装为例：
+apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+```
+
+进程的多版本管理见 **系统 -> 程序多版本管理** 章节
 
 
-## 交叉编译openssl
+
+### 1.交叉编译openssl
 
 1. 下载openssl源码
 2. 安装交叉编译工具链
@@ -1479,14 +1490,12 @@ gcc -o test test.c -L/libpath/ -ltest1 /libpath/libtest2.a
 
 
 
-### 安装aarch工具链
+### 2.交叉编译protobuf
 
-```shell
-# 以Ubuntu16.04安装为例：
-apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-```
-
-进程的多版本管理见 **系统 -> 程序多版本管理** 章节
+1. 下载protobuf源码
+2. 安装交叉编译工具链
+3. 配置`./configure --host=aarch64-linux CC=/usr/bin/aarch64-linux-gnu-gcc-4.8 CXX=/usr/bin/aarch64-linux-gnu-g++-4.8 CFLAGS="-fPIC" CXXFLAGS="-fPIC" --prefix=/root/aarch64-4.8/protobuf`
+4. `make & make install`
 
 
 
@@ -1644,6 +1653,15 @@ file locks                      (-x) unlimited
 
 
 
+上面的设置是临时的，可以在`/etc/security/limits.conf`文件添加配置：
+
+```bash
+@root soft core unlimited
+@root hard core unlimited
+```
+
+
+
 ### 配置
 
 1. 设置core文件的名称和文件路径
@@ -1670,6 +1688,8 @@ echo "/corefile/core-%e-%p-%t" > /proc/sys/kernel/core_pattern
 #或
 sysctl -w kernel.core_pattern=/corefile/core-%e-%p-%t kernel.core_pattern = /corefile/core-%e-%p-%t
 ```
+
+echo后面的内容加不加引号看情况，看引号会不会写入。
 
 上面的命令可以将core文件统一生成到`/corefile`目录下，产生的文件名为`core-命令名-pid-时间戳`
 
@@ -3013,6 +3033,51 @@ step2.然后选择gcc和g++版本
 sudo update-alternatives --config gcc
 sudo update-alternatives --config g++
 ```
+
+
+
+### update-alternatives
+
+#### --display
+
+这个参数可以看到一个命令的所有可选命令，如下：
+
+```bash
+update-alternatives --display gcc
+```
+
+
+
+#### --config
+
+该参数用于给某个命令选择一个link值，相当于在可用值之中进行切换
+
+```bash
+update-alternatives --config gcc
+```
+
+
+
+#### --install
+
+该参数用于添加一个命令的link值，相当于添加一个可用值
+
+```bash
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/aarch64-linux-gnu-gcc-4.8 48
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/aarch64-linux-gnu-gcc-5 50
+```
+
+
+
+#### --remove
+
+该参数用于删除一个命令的link值
+
+```bash
+update-alternatives --remove gcc /usr/bin/aarch64-linux-gnu-gcc-5
+```
+
+
 
 
 
@@ -6395,8 +6460,28 @@ docker.io/library/gcc:4.9.3
 #### 拉取一个其它平台的镜像
 
 ```shell
-docker pull --platfomr linux/amd64 ubuntu:21.04
+docker pull --platform linux/amd64 ubuntu:21.04
 ```
+
+
+
+### 列出镜像
+
+```bash
+docker image ls
+```
+
+如：
+
+```shell
+chengheming@chengheingdeMBP linux-2.6.32-754.el6 % docker image ls
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+ubuntu       21.04     d662230a2592   13 days ago   80MB
+gcc          4.9.3     67fca5a99861   5 years ago   1.15GB
+gcc          4.8       4e41303e90cb   5 years ago   1.06GB
+```
+
+
 
 
 
