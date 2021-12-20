@@ -3008,6 +3008,10 @@ https://www.huaweicloud.com/articles/d57fcb08c079cace334188a8aad2b8e9.html
 
 
 
+### update-alternatives
+
+
+
 以`gcc`和`g++`为例：
 
 step1.安装多版本
@@ -3035,8 +3039,6 @@ sudo update-alternatives --config g++
 ```
 
 
-
-### update-alternatives
 
 #### --display
 
@@ -4213,6 +4215,63 @@ yum install lsof
 
 
 
+`lsof`用于查看进程打开的文件，文件打开的进程，进程打开的端口。找回/恢复删除的文件。是十分方便的系统监视工具，因为`lsof`需要访问核心内存和各种文件，所以需要`root`用户执行。
+
+
+
+`lsof`打开的文件可以是：
+
+1. 普通文件
+2. 目录
+3. 网络文件系统的文件
+4. 字符或设备文件
+5. (函数)共享库
+6. 管道，命名管道
+7. 符号链接
+8. 网络文件(例如：NFS file、网络socket、unix域名socket)
+9. 其它类型文件
+
+
+
+```bash
+lsof [ -?abChlnNOPRtUvVX ] [ -A A ] [ -c c ] [ +c c ] [ +|-d d ] [ +|-D D ] [ +|-e s ] [ +|-E ] [ +|-f [cfgGn] ] [ -F [f] ] [ -g [s] ] [ -i [i] ] [ -k k ] [ -K k ] [ +|-L [l] ] [ +|-m m ] [ +|-M ] [ -o [o] ] [ -p s ] [ +|-r [t[m<fmt>]] ] [ -s [p:s] ] [ -S [t]  ]  [ -T [t] ] [ -u s ] [ +|-w ] [ -x [fl] ] [ -z [z] ] [ -Z [Z] ] [ -- ] [names]
+```
+
+
+
+### 常用参数
+
+- 默认：没有选项，lsof列出活跃进程的所有打开文件
+- 组合：可以将选项组合到一起，如-abc，但要当心哪些选项需要参数
+- -a：结果进行“与”运算
+- -l：显示用户ID而不是用户名
+- -h：获得帮助
+- -t：仅获取进程ID
+- -U：获取UNIX套接字地址
+- -i：显示网络连接，子参数`[46][proto][@host|addr][:svc_list|port_list]`
+- -p：列出指定pid打开的文件
+- -P：不显示端口协议名
+- -n：不显示hostname
+- -s：列出文件大小
+
+
+
+### 示例
+
+1. 网络
+
+```bash
+root@ubuntu:~# lsof -i :22
+COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+sshd     896 root    3u  IPv4  27700      0t0  TCP *:ssh (LISTEN)
+sshd     896 root    4u  IPv6  27711      0t0  TCP *:ssh (LISTEN)
+sshd    3377 root    4u  IPv4  48861      0t0  TCP ubuntu-linux.shared:ssh->10.211.55.2:57759 (ESTABLISHED)
+```
+
+
+
+
+
 
 
 ## 文件权限
@@ -5095,6 +5154,99 @@ ifconfig [-a] [-v] [-s] <interface> [[<AF>] <address>]
 
 - promisc 启用或禁用混杂模式，如果开启，interface将接收网络上的所有数据包
 - tunnel 建立一个IPv4与IPv6的隧道
+
+
+
+## netstat
+
+```shell
+netstat  [address_family_options]  [--tcp|-t] [--udp|-u] [--udplite|-U] [--sctp|-S] [--raw|-w] [--l2cap|-2] [--rfcomm|-f] [--listen‐ing|-l] [--all|-a] [--numeric|-n] [--numeric-hosts] [--numeric-ports] [--numeric-users]  [--symbolic|-N]  [--extend|-e[--extend|-e]] [--timers|-o] [--program|-p] [--verbose|-v] [--continuous|-c] [--wide|-W]
+
+netstat  {--route|-r}  [address_family_options]  [--extend|-e[--extend|-e]]  [--verbose|-v]  [--numeric|-n] [--numeric-hosts] [--nu‐meric-ports] [--numeric-users] [--continuous|-c]
+
+netstat {--interfaces|-i}  [--all|-a]  [--extend|-e[--extend|-e]]  [--verbose|-v]  [--program|-p]  [--numeric|-n]  [--numeric-hosts] [--numeric-ports] [--numeric-users] [--continuous|-c]
+
+netstat {--groups|-g} [--numeric|-n] [--numeric-hosts] [--numeric-ports] [--numeric-users] [--continuous|-c]
+
+netstat {--masquerade|-M} [--extend|-e] [--numeric|-n] [--numeric-hosts] [--numeric-ports] [--numeric-users] [--continuous|-c]
+
+netstat {--statistics|-s} [--tcp|-t] [--udp|-u] [--udplite|-U] [--sctp|-S] [--raw|-w]
+
+netstat {--version|-V}
+
+netstat {--help|-h}
+
+address_family_options:
+
+[-4|--inet]  [-6|--inet6]  [--protocol={inet,inet6,unix,ipx,ax25,netrom,ddp,bluetooth,  ...  }  ]  [--unix|-x] [--inet|--ip|--tcpip] [--ax25] [--x25] [--rose] [--ash] [--bluetooth] [--ipx] [--netrom] [--ddp|--appletalk] [--econet|--ec]
+
+```
+
+
+
+### 常用参数
+
+- -a：显示所有连接中的socket
+- -l：显示监听中的socket
+- -n：直接使用IP地址和port，而不使用域名或协议
+- -p：显示正在使用socket的pid和进程名
+- -t：显示TCP连接
+- -u：显示UDP连接
+- -i：显示网上列表
+- -r：显示 routing table路由表
+
+
+
+### 示例
+
+```shell
+root@ubuntu:~# netstat -i
+Kernel Interface table
+Iface      MTU    RX-OK RX-ERR RX-DRP RX-OVR    TX-OK TX-ERR TX-DRP TX-OVR Flg
+enp0s5    1500    79824      0      0 0         23536      0      0      0 BMRU
+lo       65536      285      0      0 0           285      0      0      0 LRU
+
+
+root@ubuntu:~# netstat -a
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        0      0 localhost:domain        0.0.0.0:*               LISTEN
+tcp        0      0 0.0.0.0:ssh             0.0.0.0:*               LISTEN
+tcp        0      0 localhost:ipp           0.0.0.0:*               LISTEN
+tcp        0      0 ubuntu-linux.shared:ssh 10.211.55.2:57759       ESTABLISHED
+tcp6       0      0 [::]:ssh                [::]:*                  LISTEN
+tcp6       0      0 ip6-localhost:ipp       [::]:*                  LISTEN
+udp        0      0 0.0.0.0:631             0.0.0.0:*
+udp        0      0 localhost:domain        0.0.0.0:*
+udp        0      0 ubuntu-linux.sha:bootpc prl-local-ns-ser:bootps ESTABLISHED
+udp        0      0 0.0.0.0:45258           0.0.0.0:*
+udp        0      0 0.0.0.0:mdns            0.0.0.0:*
+udp6       0      0 [::]:40165              [::]:*
+udp6       0      0 [::]:mdns               [::]:*
+raw6       0      0 [::]:ipv6-icmp          [::]:*                  7
+Active UNIX domain sockets (servers and established)
+Proto RefCnt Flags       Type       State         I-Node   Path
+unix  2      [ ACC ]     STREAM     LISTENING     44833    @/tmp/.ICE-unix/2839
+unix  2      [ ]         DGRAM                    51209    /run/user/0/systemd/notify
+unix  2      [ ]         DGRAM                    43198    /run/user/1000/systemd/notify
+unix  2      [ ACC ]     STREAM     LISTENING     51212    /run/user/0/systemd/private
+
+
+root@ubuntu:~# netstat -npt
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 10.211.55.3:22          10.211.55.2:57759       ESTABLISHED 3377/sshd: root@pts
+
+
+root@ubuntu:~# netstat -r
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
+default         prl-local-ns-se 0.0.0.0         UG        0 0          0 enp0s5
+10.211.55.0     0.0.0.0         255.255.255.0   U         0 0          0 enp0s5
+link-local      0.0.0.0         255.255.0.0     U         0 0          0 enp0s5
+```
+
+
 
 
 
