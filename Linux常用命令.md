@@ -2027,10 +2027,28 @@ dpkg -l
 dpkg -l | grep gcc
 ```
 
+
+
 ### *.deb安装
 
 ```shell
 dpkg -i *.deb
+
+# 正试图覆盖xx，它同时被包含于软件包xx，在处理时有错误发生：B.deb
+# 强制覆盖安装
+dpkg -i --force-overwrite *.deb
+```
+
+
+
+### 卸载
+
+```bash
+# 删除除了配置文件之外的所有文件
+dpkg -r gcc
+
+# 删除所有文件
+dpkg -P packagename
 ```
 
 
@@ -2143,7 +2161,12 @@ rpm -ql nginx-1.12.1-1.el7.ngx.x86_64
 ```shell
 # 列出安装的软件包
 apt list --installed
+
+# 删除软件包而保留软件的配置文件
 apt remove [python3-apt 包名]
+
+# 同时删除软件包和软件的配置文件
+apt purge [packagename]
 ```
 
 
@@ -4266,6 +4289,68 @@ COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
 sshd     896 root    3u  IPv4  27700      0t0  TCP *:ssh (LISTEN)
 sshd     896 root    4u  IPv6  27711      0t0  TCP *:ssh (LISTEN)
 sshd    3377 root    4u  IPv4  48861      0t0  TCP ubuntu-linux.shared:ssh->10.211.55.2:57759 (ESTABLISHED)
+
+
+
+# 找出监听端口
+root@ubuntu:~# lsof  -i -sTCP:LISTEN
+COMMAND   PID            USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+systemd-r 660 systemd-resolve   13u  IPv4  22937      0t0  TCP localhost:domain (LISTEN)
+cupsd     801            root    6u  IPv6  28606      0t0  TCP ip6-localhost:ipp (LISTEN)
+cupsd     801            root    7u  IPv4  28607      0t0  TCP localhost:ipp (LISTEN)
+sshd      896            root    3u  IPv4  27700      0t0  TCP *:ssh (LISTEN)
+sshd      896            root    4u  IPv6  27711      0t0  TCP *:ssh (LISTEN)
+
+
+# 找出已建立的连接
+root@ubuntu:~# lsof  -i -sTCP:ESTABLISHED
+COMMAND    PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+NetworkMa 2253 root   18u  IPv4  38631      0t0  UDP ubuntu-linux.shared:bootpc->prl-local-ns-server.shared:bootps
+sshd      3377 root    4u  IPv4  48861      0t0  TCP ubuntu-linux.shared:ssh->10.211.55.2:57759 (ESTABLISHED)
+```
+
+
+
+2. 用户信息
+
+```bash
+# 显示root用户打开的文件
+lsof -u root
+
+# 显示非root用户打开的文件
+lsof -u ^root
+```
+
+
+
+3. 命令和进程
+
+```bash
+# 使用-c查看指定的命令正在使用的文件和网络连接
+$ lsof  -c syslog-ng
+
+  COMMAND    PID USER   FD   TYPE     DEVICE    SIZE       NODE NAME
+  syslog-ng 7547 root  cwd    DIR 3,3  4096  2  /
+  syslog-ng 7547 root  rtd    DIR 3,3  4096  2  /
+  syslog-ng 7547 root  txt    REG 3,3  113524  1064970  /usr/sbin/syslog-ng
+  -- snipped --
+  
+# 使用-p查看指定进程PID已打开的内容
+$ lsof -p 1234
+```
+
+
+
+4. 文件和目录
+
+通过查看指定文件或目录，可以看到系统上所有正与其交互的资源 --- 包括用户、进程等。
+
+```bash
+root@ubuntu:~# lsof /var/log/kern.log
+lsof: WARNING: can't stat() fuse.gvfsd-fuse file system /run/user/1000/gvfs
+      Output information may be incomplete.
+COMMAND  PID   USER   FD   TYPE DEVICE SIZE/OFF   NODE NAME
+rsyslogd 720 syslog    9w   REG  253,0     6501 787046 /var/log/kern.log
 ```
 
 
@@ -4274,7 +4359,7 @@ sshd    3377 root    4u  IPv4  48861      0t0  TCP ubuntu-linux.shared:ssh->10.2
 
 
 
-## 文件权限
+## 文件权限(ls)
 
 ```shell
 [root@www /]# ls -l
@@ -6941,7 +7026,11 @@ grep -r test /usr/include
 
 
 
+3. 忽略大小写
 
+```bash
+grep -i "error"
+```
 
 
 
