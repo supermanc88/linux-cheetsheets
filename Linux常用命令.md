@@ -817,11 +817,27 @@ brew install qemu
 
 # gdbserver tcp:1234
 -s
+
+# 端口转发
+-nic user,hostfwd=tcp::10022-:22,hostfwd=tcp::5900-:5900
+
+# 虚拟机注册一块虚拟网卡
+-net nic
 ```
 
 
 
+## Tap网络
 
+Tap device 是一个Linux内核特性，允许您创建作为真实网络接口的虚拟网络接口。发送到tap接口的包将被传递到一个用户空间程序(如qemu)，该程序将自己绑定到该接口。
+
+qemu可以为虚拟机使用tap网络，因此发送到tap接口的包将被发送到虚拟机，并显示为来自虚拟机中的网络接口(通常为以太网接口)。相反，虚拟机通过其网络接口发送的所有内容都将出现在tap接口上。
+
+Linux桥接驱动程序支持tap设备，因此可以将tap设备彼此桥接在一直，也可以连接其他主机接口，如eth0。如果您希望您的虚拟机能够相互通信，或者希望lan上的其他机器能够与虚拟机通信，那么这是非常理想的方案。
+
+
+
+[QEMU (简体中文) - ArchWiki (archlinux.org)](https://wiki.archlinux.org/title/QEMU_(简体中文)#宿主机和虚拟机数据交互)
 
 
 
@@ -2277,6 +2293,20 @@ apt-get install x-window-system-core gnome-core
 
 # 系统
 
+## 用户
+
+### 查看系统存在的用户列表
+
+如果用户默认的shell进程为bash(zsh、sh替换即可)：
+
+```bash
+cat /etc/passwd | grep -v nologin | grep bash
+```
+
+
+
+
+
 
 
 ## 服务/service
@@ -2368,7 +2398,7 @@ chkconfig mysqld on
 
 
 
-## 修改root密码
+## 修改root密码/单用户模式
 
 在启动时修改kernel启动参数，在后面添加`single`或数字`1`，会直接进入系统，之后使用命令`passwd root`
 
@@ -2406,22 +2436,6 @@ chkconfig mysqld on
 
 
 [logind.conf 中文手册 [金步国\] (jinbuguo.com)](http://www.jinbuguo.com/systemd/logind.conf.html)
-
-
-
-## 关闭ASLR 基址随机
-
-方式1:
-
-```shell
-echo 0 > /proc/sys/kernel/randomize_va_space
-```
-
-
-
-方式2:
-
-在`/boot/grub/grub.conf`的启动参数后加`nokaslr`
 
 
 
@@ -2798,6 +2812,44 @@ pacman -S screenfetch
 
 ## 查看glibc版本
 
+```bash
+# 使用ldd
+ldd --version
+
+root@30f7da99bf3e:/# ldd --version
+ldd (Ubuntu EGLIBC 2.19-0ubuntu6.15) 2.19
+Copyright (C) 2014 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Written by Roland McGrath and Ulrich Drepper.
+
+
+# libc.so 查看glibc版本
+root@30f7da99bf3e:/# find / -name "libc.so*"
+/lib/x86_64-linux-gnu/libc.so.6
+/usr/lib/x86_64-linux-gnu/libc.so
+root@30f7da99bf3e:/# /lib/x86_64-linux-gnu/libc.so.6
+GNU C Library (Ubuntu EGLIBC 2.19-0ubuntu6.15) stable release version 2.19, by Roland McGrath et al.
+Copyright (C) 2014 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+Compiled by GNU CC version 4.8.4.
+Compiled on a Linux 3.13.11 system on 2019-03-27.
+Available extensions:
+	crypt add-on version 2.1 by Michael Glad and others
+	GNU Libidn by Simon Josefsson
+	Native POSIX Threads Library by Ulrich Drepper et al
+	BIND-8.2.3-T5B
+libc ABIs: UNIQUE IFUNC
+For bug reporting instructions, please see:
+<https://bugs.launchpad.net/ubuntu/+source/eglibc/+bugs>.
+```
+
+
+
+
+
 ```shell
 root@kyv10:~# strings /lib/x86_64-linux-gnu/libc.so.6 | grep GLIBC
 GLIBC_2.2.5
@@ -2838,6 +2890,21 @@ GLIBC_2.4
 GLIBC_2.5
 GLIBC_PRIVATE
 ```
+
+
+
+### objdump
+
+```bash
+# 查看libstdc++.so 信赖的glibc版本
+root@30f7da99bf3e:/# objdump -T /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBC_
+0000000000000000      DF *UND*	0000000000000000  GLIBC_2.2.5 __strtof_l
+0000000000000000      DF *UND*	0000000000000000  GLIBC_2.2.5 fileno
+0000000000000000  w   DF *UND*	0000000000000000  GLIBC_2.3.2 pthread_cond_destroy
+0000000000000000      DF *UND*	0000000000000000  GLIBC_2.2.5 __strcoll_l
+```
+
+
 
 
 
@@ -3308,9 +3375,27 @@ sudo yum makecache
 
 
 
-## SELinux
+### 关闭ASLR 基址随机
 
-### CentOS7
+方式1:
+
+```shell
+echo 0 > /proc/sys/kernel/randomize_va_space
+```
+
+
+
+方式2:
+
+在`/boot/grub/grub.conf`的启动参数后加`nokaslr`
+
+
+
+
+
+### SELinux
+
+#### CentOS7
 
 1. 查询SELinux状态
 
@@ -6647,26 +6732,7 @@ For more examples and ideas, visit:
 
 
 
-## 使用
-
-### 列出容器
-
-```shell
-docker ps
-```
-
-ps常用参数：
-
-- -a:列出所有容器，包括停止运行的，如果没有这个选项，则默认只列出正在运行的容器。
-- -q:这个选项列出容器的数字id，而不是容器的所有信息
-
-
-
-### 停止容器
-
-```shell
-docker stop
-```
+## 镜像
 
 ### 获取镜像
 
@@ -6740,6 +6806,269 @@ docker rmi -f $(docker image -q)
 
 
 
+### 创建镜像
+
+创建镜像有很多方法，用户可以从`Docker Hub`获取已有镜像并更新，也可以利用本地文件系统创建一个。
+
+
+
+#### 修改已有镜像
+
+1. 先使用下载的镜像启动容器
+
+```bash
+docker run -it ubuntu:21.04 /bin/bash
+```
+
+2. 添加软件
+
+```bash
+apt-get update
+apt install gdb
+```
+
+3. 当结束后，使用`exit`退出，现在容器已经被改变了，使用`docker commit`命令来提交更新后的副本。
+
+```bash
+chengheming@chengheingdeMBP infosec_pam % docker ps -a
+CONTAINER ID   IMAGE           COMMAND       CREATED        STATUS                   PORTS     NAMES
+fd5f7ab995b1   ubuntu:xenial   "/bin/bash"   22 hours ago   Up 17 hours                        aarch-gcc
+3db80c08f89f   gcc:4.8         "/bin/bash"   10 days ago    Exited (0) 10 days ago             kernel-build
+3a41cb82f659   ubuntu:21.04    "/bin/bash"   3 weeks ago    Exited (0) 3 weeks ago             ubuntu_gdb
+
+docker commit -a "superman" -m "ubuntu_gdb" 3a41cb82f659 ubuntu:gdb
+```
+
+
+
+结果：
+
+```bash
+# 创建镜像
+chengheming@chengheingdeMBP infosec_pam % docker commit -a "superman" -m "ubuntu_gdb" 3a41cb82f659 ubuntu:gdb
+sha256:0d6386cd369f33e5834fea757ccd3792ec0768ad951399f6f40cafe16ecd01e2
+
+# 列出镜像
+chengheming@chengheingdeMBP infosec_pam % docker image ls
+REPOSITORY   TAG       IMAGE ID       CREATED          SIZE
+ubuntu       gdb       0d6386cd369f   37 seconds ago   181MB
+ubuntu       21.04     d662230a2592   3 weeks ago      80MB
+ubuntu       xenial    fe3b34cb9255   2 months ago     119MB
+gcc          4.9.3     67fca5a99861   5 years ago      1.15GB
+gcc          4.8       4e41303e90cb   5 years ago      1.06GB
+```
+
+
+
+**docker commit :**从容器创建一个新的镜像。
+
+**语法**
+
+```bash
+docker commit [OPTIONS] CONTAINER [REPOSITORY[:TAG]]
+```
+
+OPTIONS说明：
+
+- **-a :**提交的镜像作者；
+
+  
+
+- **-c :**使用`Dockerfile`指令来创建镜像；
+
+  
+
+- **-m :**提交时的说明文字；
+
+  
+
+- **-p :**在`commit`时，将容器暂停。
+
+  
+
+**实例**
+
+将容器`a404c6c174a2` 保存为新的镜像,并添加提交人信息和说明信息。
+
+```bash
+runoob@runoob:~$ docker commit -a "runoob.com" -m "my apache" a404c6c174a2  mymysql:v1 
+sha256:37af1236adef1544e8886be23010b66577647a40bc02c0885a6600b33ee28057
+runoob@runoob:~$ docker images mymysql:v1
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+mymysql             v1                  37af1236adef        15 seconds ago      329 MB
+```
+
+
+
+
+
+#### 从本地文件系统导入
+
+要从本地文件系统导入一个镜像，可以使用`openvz`(容器虚拟化的先锋技术)的模板来创建：`openvz`的模板下载地址为[Download/template/precreated - OpenVZ Virtuozzo Containers Wiki](https://wiki.openvz.org/Download/template/precreated)
+
+
+
+比如，先下载了一个 `ubuntu-14.04` 的镜像，之后使用以下命令导入：
+
+```bash
+sudo cat ubuntu-14.04-x86_64-minimal.tar.gz  |docker import - ubuntu:14.04
+```
+
+然后查看新导入的镜像。
+
+```bash
+docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+ubuntu              14.04               05ac7c0b9383        17 seconds ago      215.5 MB
+```
+
+
+
+
+
+#### 利用Dockerfile来创建镜像
+
+使用`docker commit`来扩展一个镜像比较简单，但是不方便在一个团队中分享。我们可以使用`docker build`来创建一个新的镜像。为此，首先需要创建一个`Dockerfile`，包含一些如何创建镜像的指令。
+
+
+
+新建一个目录和一个`Dockerfile`
+
+```bash
+mkdir sinatra
+cd sinatra
+touch Dockerfile
+```
+
+
+
+`Dockerfile`中每一条指令都创建镜像的一层，例如：
+
+```bash
+# This is a comment
+FROM ubuntu:14.04
+MAINTAINER superman <supermanc88@gmail.com>
+RUN apt-get -qq update
+RUN apt-get -qqy install gcc gdb g++
+```
+
+`Dockerfile`基本的语法是
+
+- 使用`#`来注释
+- `FROM`指令告诉`Docker`使用哪个镜像作为基础
+- 接着是维护都的信息
+- `RUN`开头的指令会在创建中运行，比如安装一个软件包，在这里使用`apt-get`来安装一些软体
+
+编写完成`Dockerfile`后可以使用`docker build`来生成镜像
+
+```
+$ sudo docker build -t="ouruser/sinatra:v2" .
+Uploading context  2.56 kB
+Uploading context
+Step 0 : FROM ubuntu:14.04
+ ---> 99ec81b80c55
+Step 1 : MAINTAINER Newbee <newbee@docker.com>
+ ---> Running in 7c5664a8a0c1
+ ---> 2fa8ca4e2a13
+Removing intermediate container 7c5664a8a0c1
+Step 2 : RUN apt-get -qq update
+ ---> Running in b07cc3fb4256
+ ---> 50d21070ec0c
+Removing intermediate container b07cc3fb4256
+Step 3 : RUN apt-get -qqy install ruby ruby-dev
+ ---> Running in a5b038dd127e
+Selecting previously unselected package libasan0:amd64.
+(Reading database ... 11518 files and directories currently installed.)
+Preparing to unpack .../libasan0_4.8.2-19ubuntu1_amd64.deb ...
+Setting up ruby (1:1.9.3.4) ...
+Setting up ruby1.9.1 (1.9.3.484-2ubuntu1) ...
+Processing triggers for libc-bin (2.19-0ubuntu6) ...
+ ---> 2acb20f17878
+Removing intermediate container a5b038dd127e
+Step 4 : RUN gem install sinatra
+ ---> Running in 5e9d0065c1f7
+. . .
+Successfully installed rack-protection-1.5.3
+Successfully installed sinatra-1.4.5
+4 gems installed
+ ---> 324104cde6ad
+Removing intermediate container 5e9d0065c1f7
+Successfully built 324104cde6ad
+```
+
+其中 `-t` 标记来添加 `tag`，指定新的镜像的用户信息。 “.” 是 `Dockerfile` 所在的路径（当前目录），也可以替换为一个具体的 `Dockerfile` 的路径。
+
+可以看到 `build` 进程在执行操作。它要做的第一件事情就是上传这个 `Dockerfile` 内容，因为所有的操作都要依据 `Dockerfile` 来进行。 然后，`Dockfile` 中的指令被一条一条的执行。每一步都创建了一个新的容器，在容器中执行指令并提交修改（就跟之前介绍过的 `docker commit` 一样）。当所有的指令都执行完毕之后，返回了最终的镜像 id。所有的中间步骤所产生的容器都被删除和清理了。
+
+**注意一个镜像不能超过 `127` 层**
+
+此外，还可以利用 `ADD` 命令复制本地文件到镜像；用 `EXPOSE` 命令来向外部开放端口；用 `CMD` 命令来描述容器启动后运行的程序等。例如
+
+```bash
+# put my local web site in myApp folder to /var/www
+ADD myApp /var/www
+# expose httpd port
+EXPOSE 80
+# the command to run
+CMD ["/usr/sbin/apachectl", "-D", "FOREGROUND"]
+```
+
+现在可以利用新创建的镜像来启动一个容器。
+
+```bash
+$ sudo docker run -t -i ouruser/sinatra:v2 /bin/bash
+root@8196968dac35:/#
+```
+
+还可以用 `docker tag` 命令来修改镜像的标签。
+
+```bash
+$ sudo docker tag 5db5f8471261 ouruser/sinatra:devel
+$ sudo docker images ouruser/sinatra
+REPOSITORY          TAG     IMAGE ID      CREATED        VIRTUAL SIZE
+ouruser/sinatra     latest  5db5f8471261  11 hours ago   446.7 MB
+ouruser/sinatra     devel   5db5f8471261  11 hours ago   446.7 MB
+ouruser/sinatra     v2      5db5f8471261  11 hours ago   446.7 MB
+```
+
+
+
+#### 上传镜像
+
+用户可以通过 `docker push` 命令，把自己创建的镜像上传到仓库中来共享。例如，用户在 Docker Hub 上完成注册后，可以推送自己的镜像到仓库中。
+
+```bash
+$ sudo docker push ouruser/sinatra
+The push refers to a repository [ouruser/sinatra] (len: 1)
+Sending image list
+Pushing repository ouruser/sinatra (3 tags)
+```
+
+
+
+## 容器
+
+### 列出容器
+
+```shell
+docker ps
+```
+
+ps常用参数：
+
+- `-a`:列出所有容器，包括停止运行的，如果没有这个选项，则默认只列出正在运行的容器。
+- `-q`:这个选项列出容器的数字`id`，而不是容器的所有信息
+
+
+
+### 停止容器
+
+```shell
+docker stop
+```
+
+
+
 ### 启动容器
 
 ```shell
@@ -6756,14 +7085,14 @@ gcc version 4.9.3 (GCC)
 
 **参数说明**
 
-- -i：交互式操作
-- -t：终端
-- gcc:4.9.3:gcc的镜像
-- /bin/bash: 放在镜像名后的是命令，这里我们希望有个交互式shell，因此用的是/bin/bash
+- `-i`：交互式操作
+- `-t`：终端
+- `gcc:4.9.3`:gcc的镜像
+- `/bin/bash`: 放在镜像名后的是命令，这里我们希望有个交互式shell，因此用的是/bin/bash
 
 run的其它参数：
 
-- --name:给容器命名
+- `--name`:给容器命名
 
 
 
@@ -6798,25 +7127,17 @@ ee06065c8700   gcc:4.9.3     "/bin/bash"   4 minutes ago    Up 6 seconds        
 d32b9760ed6b   hello-world   "/hello"      13 minutes ago   Exited (0) 13 minutes ago             vibrant_bell
 ```
 
-## 后台运行
 
-在大部分的场景下，我们希望docker的服务是在后台运行的，我们可以通过`-d`指定容器的运行模式：
 
-```shell
-root@kerneldev:~# docker run -itd --name gcc-test gcc:4.9.3 /bin/bash
-8255ecfccb06211ec7b6f73c58abe435ee0b6976eae512e45aee02539e90dd5c
-root@kerneldev:~# docker ps -a
-CONTAINER ID   IMAGE         COMMAND       CREATED          STATUS                       PORTS     NAMES
-8255ecfccb06   gcc:4.9.3     "/bin/bash"   5 seconds ago    Up 4 seconds                           gcc-test
-ee06065c8700   gcc:4.9.3     "/bin/bash"   8 minutes ago    Exited (137) 2 minutes ago             vigilant_darwin
-79d3ad984a75   gcc:4.9.3     "/bin/bash"   8 minutes ago    Exited (0) 8 minutes ago               happy_cray
-6c9aa471f2b4   hello-world   "/hello"      17 minutes ago   Exited (0) 17 minutes ago              dreamy_ganguly
-d32b9760ed6b   hello-world   "/hello"      17 minutes ago   Exited (0) 17 minutes ago              vibrant_bell
+### 修改容器名
+
+```bash
+docker rename oldname newname
 ```
 
 
 
-## 停止一个容器
+### 停止一个容器
 
 ```shell
 root@kerneldev:~# docker stop ee06065c8700
@@ -6845,7 +7166,25 @@ docker stop $(docker ps -a -q)
 
 
 
-## 进入容器
+### 后台运行
+
+在大部分的场景下，我们希望`docker`的服务是在后台运行的，我们可以通过`-d`指定容器的运行模式：
+
+```shell
+root@kerneldev:~# docker run -itd --name gcc-test gcc:4.9.3 /bin/bash
+8255ecfccb06211ec7b6f73c58abe435ee0b6976eae512e45aee02539e90dd5c
+root@kerneldev:~# docker ps -a
+CONTAINER ID   IMAGE         COMMAND       CREATED          STATUS                       PORTS     NAMES
+8255ecfccb06   gcc:4.9.3     "/bin/bash"   5 seconds ago    Up 4 seconds                           gcc-test
+ee06065c8700   gcc:4.9.3     "/bin/bash"   8 minutes ago    Exited (137) 2 minutes ago             vigilant_darwin
+79d3ad984a75   gcc:4.9.3     "/bin/bash"   8 minutes ago    Exited (0) 8 minutes ago               happy_cray
+6c9aa471f2b4   hello-world   "/hello"      17 minutes ago   Exited (0) 17 minutes ago              dreamy_ganguly
+d32b9760ed6b   hello-world   "/hello"      17 minutes ago   Exited (0) 17 minutes ago              vibrant_bell
+```
+
+
+
+### 进入容器
 
 在使用`-d`参数时，容器启动后会进入后台，此时想要进入容器，可以通过以下指令进入：
 
@@ -6859,8 +7198,6 @@ docker exec -it ee06065c8700 /bin/bash
 ```
 
 
-
-## 导出或导入容器
 
 ### 导出容器
 
@@ -6890,21 +7227,29 @@ docker import http://example.com/exampleimage.tgz example/imagerepo
 
 
 
-## 删除容器
+### 删除容器
 
 删除容器使用`docker rm`命令：
 
 ```shell
 docker rm -f ee06065c8700
+
+
+# 删除所有容器
+docker rm -f $(docker ps -a -q)
 ```
 
 
 
-## 挂载宿主机目录
+### 挂载宿主机目录
 
 ```shell
 docker run -it -v /home/superman/Downloads:/usr/Downloads ubuntu64 /bin/bash
 ```
+
+
+
+
 
 
 
@@ -6996,7 +7341,7 @@ echo "第三个参数：$3"
 
 ### 用来处理参数的其它特殊字符
 
-- `$#`    传递到脚本的参数个数
+- `$#`    **传递到脚本的参数个数**
 - `$*`    以一个字符串显示所有向脚本传递的参数，如用`"`括起来，会以`"$1 $2 ... $n"`的形式显示所有参数
 - `$$`    脚本的进程ID号
 - `$!`    后台运行的最后一个进程ID号
