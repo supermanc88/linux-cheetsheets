@@ -1555,6 +1555,36 @@ Install the project...
 
 
 
+## centos6.10 编译 gcc4.8.5
+
+```bash
+yum install gcc
+yum install wget
+
+
+wget https://ftp.gnu.org/gnu/gcc/gcc-4.8.5/gcc-4.8.5.tar.gz --no-check-certificate
+
+tar -zvxf gcc-4.8.5.tar.gz
+cd gcc-4.8.5
+
+./contrib/download_prerequisites
+
+mkdir gcc-build
+cd gcc-build/
+
+../configure -enable-checking=release -enable-languages=c,c++ -disable-multilib
+
+make -j8
+
+make install
+```
+
+
+
+
+
+
+
 # 调试
 
 
@@ -3463,6 +3493,144 @@ The DMI driver in the Linux kernel only allows to read the values.  SMBIOS
 
 
 # 权限
+
+
+
+## sudo
+
+Linux sudo命令以系统管理者的身份执行指令，也就是说，经由sudo所执行的指令就好像是root亲自执行。
+
+```bash
+[root@test ~]# cat /etc/sudoers
+## Sudoers allows particular users to run various commands as
+## the root user, without needing the root password.
+##该文件允许特定用户像root用户一样使用各种各样的命令，而不需要root用户的密码 
+##
+## Examples are provided at the bottom of the file for collections
+## of related commands, which can then be delegated out to particular
+## users or groups.
+## 在文件的底部提供了很多相关命令的示例以供选择，这些示例都可以被特定用户或  
+## ## 用户组所使用  
+## This file must be edited with the 'visudo' command.
+## 该文件必须使用"visudo"命令编辑
+## Host Aliases
+#主机别名
+## Groups of machines. You may prefer to use hostnames (perhap using 
+## wildcards for entire domains) or IP addresses instead.
+## 对于一组服务器，你可能会更喜欢使用主机名（可能是全域名的通配符）
+## 或IP地址代替，这时可以配置主机别名
+
+# Host_Alias     FILESERVERS = fs1, fs2
+# Host_Alias     MAILSERVERS = smtp, smtp2
+## User Aliases
+#用户别名
+## These aren't often necessary, as you can use regular groups
+## (ie, from files, LDAP, NIS, etc) in this file - just use %groupname 
+## rather than USERALIAS
+## 这并不很常用，因为你可以通过使用组来代替一组用户的别名  
+# User_Alias ADMINS = jsmith, mikem
+
+## Command Aliases
+## These are groups of related commands...
+## 指定一系列相互关联的命令（当然可以是一个）的别名，通过赋予该别名sudo权限，  
+## 可以通过sudo调用所有别名包含的命令，下面是一些示例
+
+## Networking
+#网络操作相关命令别名  
+Cmnd_Alias NETWORKING = /sbin/route, /sbin/ifconfig, /bin/ping, /sbin/dhclient,
+ /usr/bin/net, /sbin/iptables, /usr/bin/rfcomm, /usr/bin/wvdial, /sbin/iwconfig, 
+ /sbin/mii-tool
+## Installation and management of software
+#软件安装管理相关命令别名  
+Cmnd_Alias SOFTWARE = /bin/rpm, /usr/bin/up2date, /usr/bin/yum
+## Services
+#服务相关命令别名 
+Cmnd_Alias SERVICES = /sbin/service, /sbin/chkconfig
+## Updating the locate database
+#本地数据库升级命令别名  
+Cmnd_Alias LOCATE = /usr/sbin/updatedb
+## Storage
+#磁盘操作相关命令别名
+Cmnd_Alias STORAGE = /sbin/fdisk, /sbin/sfdisk, /sbin/parted, /sbin/partprobe, /bin/mount, /bin/umount
+## Delegating permissions
+#代理权限相关命令别名 
+Cmnd_Alias DELEGATING = /usr/sbin/visudo, /bin/chown, /bin/chmod, /bin/chgrp
+## Processes
+#进程相关命令别名
+Cmnd_Alias PROCESSES = /bin/nice, /bin/kill, /usr/bin/kill, /usr/bin/killall
+## Drivers
+#驱动命令别名
+Cmnd_Alias DRIVERS = /sbin/modprobe
+#环境变量的相关配置
+# Defaults specification
+#
+# Disable "ssh hostname sudo <cmd>", because it will show the password in clear. 
+#         You have to run "ssh -t hostname sudo <cmd>".
+#
+Defaults    requiretty
+Defaults    env_reset
+Defaults    env_keep = "COLORS DISPLAY HOSTNAME HISTSIZE INPUTRC KDEDIR \
+                        LS_COLORS MAIL PS1 PS2 QTDIR USERNAME \
+                        LANG LC_ADDRESS LC_CTYPE LC_COLLATE LC_IDENTIFICATION \
+                        LC_MEASUREMENT LC_MESSAGES LC_MONETARY LC_NAME LC_NUMERIC \
+                        LC_PAPER LC_TELEPHONE LC_TIME LC_ALL LANGUAGE LINGUAS \
+                        _XKB_CHARSET XAUTHORITY"
+## Next comes the main part: which users can run what software on
+## which machines (the sudoers file can be shared between multiple
+## systems).
+## 下面是规则配置：什么用户在哪台服务器上可以执行哪些命令（sudoers文件可以在多个系统上共享）
+## Syntax:
+##语法
+##      user    MACHINE=COMMANDS
+##  用户 登录的主机=（可以变换的身份） 可以执行的命令  
+##
+## The COMMANDS section may have other options added to it.
+## 命令部分可以附带一些其它的选项  
+##
+## Allow root to run any commands anywhere 
+## 允许root用户执行任意路径下的任意命令 
+root    ALL=(ALL)       ALL
+## Allows members of the 'sys' group to run networking, software,
+## service management apps and more.
+# %sys ALL = NETWORKING, SOFTWARE, SERVICES, STORAGE, DELEGATING, PROCESSES, LOCATE, DRIVERS
+## 允许sys中户组中的用户使用NETWORKING等所有别名中配置的命令
+
+## Allows people in group wheel to run all commands
+# %wheel        ALL=(ALL)       ALL
+## 允许wheel用户组中的用户执行所有命令  
+## Same thing without a password
+## 允许wheel用户组中的用户在不输入该用户的密码的情况下使用所有命令
+# %wheel        ALL=(ALL)       NOPASSWD: ALL
+## Allows members of the users group to mount and unmount the
+## cdrom as root
+## 允许users用户组中的用户像root用户一样使用mount、unmount、chrom命令 
+# %users  ALL=/sbin/mount /mnt/cdrom, /sbin/umount /mnt/cdrom
+## Allows members of the users group to shutdown this system
+# %users  localhost=/sbin/shutdown -h now
+## 允许users用户组中的用户像root用户一样使用shutdown命令
+```
+
+
+
+```bash
+test ALL=(ALL) ALL
+
+test1 ALL=(ALL) NOPASSWD: /usr/bin/bash,/usr/bin/sh
+```
+
+
+
+test: 表示test这个用户
+
+ALL=(ALL): 第一个ALL表示所有主机，第二个ALL表示所有用户
+
+NOPASSWD: 表示不需要输入密码就能切换到用户
+
+/usr/bin/bash,/usr/bin/sh: 表示能够执行命令
+
+test1用户可以在任意主机上不输入密码的情况下以root用户执行/usr/bin/bash和/usr/bin/sh
+
+
 
 
 
@@ -6669,6 +6837,8 @@ make install   # as root
 
 # Docker
 
+Docker分为CE版本(Community Edition:社区版)和EE版本(Enterprise Edition:企业版)
+
 ## 安装
 
 ```shell
@@ -7375,6 +7545,14 @@ grep -r test /usr/include
 
 ```bash
 grep -i "error"
+```
+
+
+
+4. 排除
+
+```bash
+ps aux | grep infosec-ha | grep -v grep
 ```
 
 
