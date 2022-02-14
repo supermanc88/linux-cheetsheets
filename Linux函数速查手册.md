@@ -3851,3 +3851,27 @@ char *getenv(const char *name);
 
 ## 文件操作
 
+### fcntl
+
+```c
+#include <unistd.h>
+#include <fcntl.h>
+
+int fcntl(int fd, int cmd, ... /* arg */ );
+```
+
+fcntl()针对(文件)描述符提供控制。参数fd是被参数cmd操作(如下面的描述)的描述符。针对cmd的值，fcntl能够接受第三个参数int arg。
+
+
+
+### isatty
+
+```c
+#include <unistd.h>
+
+int isatty(int fd);
+```
+
+判断文件描述符是否为终端
+
+返回值：如果文件为终端则返回1, 否则返回0.
