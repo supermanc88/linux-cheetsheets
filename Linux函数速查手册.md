@@ -3150,6 +3150,12 @@ void slab_demo(void)
 
 
 
+# 内核链表
+
+
+
+
+
 # Kernel Crypto
 
 [Kernel Crypto框架 - 内核工匠 - 博客园 (cnblogs.com)](https://www.cnblogs.com/Linux-tech/p/13326564.html)
@@ -3593,6 +3599,85 @@ static int crypto_cbc_encrypt(struct blkcipher_desc *desc,
 
 
 **返回值**
+
+
+
+
+
+## copy_from_user
+
+**定义**
+
+```c
+/**
+ * copy_from_user: - Copy a block of data from user space.
+ * @to:   Destination address, in kernel space.
+ * @from: Source address, in user space.
+ * @n:    Number of bytes to copy.
+ *
+ * Context: User context only.  This function may sleep.
+ *
+ * Copy data from user space to kernel space.
+ *
+ * Returns number of bytes that could not be copied.
+ * On success, this will be zero.
+ *
+ * If some data could not be copied, this function will pad the copied
+ * data to the requested size using zero bytes.
+ */
+static inline unsigned long __must_check
+copy_from_user(void *to, const void __user *from, unsigned long n)
+{
+	might_fault();
+	if (access_ok(VERIFY_READ, from, n))
+		n = __copy_from_user(to, from, n);
+	else
+		memset(to, 0, n);
+	return n;
+}
+
+```
+
+**返回值**
+
+- 如果成功，返回0
+- 如果失败，返回未被拷贝的字节数
+
+
+
+## copy_to_user
+
+**定义**
+
+```c
+/**
+ * copy_to_user: - Copy a block of data into user space.
+ * @to:   Destination address, in user space.
+ * @from: Source address, in kernel space.
+ * @n:    Number of bytes to copy.
+ *
+ * Context: User context only.  This function may sleep.
+ *
+ * Copy data from kernel space to user space.
+ *
+ * Returns number of bytes that could not be copied.
+ * On success, this will be zero.
+ */
+static inline unsigned long __must_check
+copy_to_user(void __user *to, const void *from, unsigned long n)
+{
+	might_fault();
+	if (access_ok(VERIFY_WRITE, to, n))
+		n = __copy_to_user(to, from, n);
+	return n;
+}
+
+```
+
+**返回值**
+
+- 如果成功，返回0
+- 如果失败，返回未成功拷贝的字节数
 
 
 

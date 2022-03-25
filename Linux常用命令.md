@@ -2071,6 +2071,7 @@ Install the project...
 
 ```bash
 yum install gcc
+yum install gcc-c++
 yum install wget
 
 
@@ -2163,7 +2164,21 @@ set substitute-path /root/rpmbuild/SOURCES/linux-2.6.32-754.el6/ /home/superman/
 
 
 
+### 条件断点
+
+```bash
+break x:20 if strcmp(y, "hello") == 0
+```
+
+`20` is line number, `x` can be any filename and `y` can be any variable.
+
+
+
 ## vscode
+
+### 条件断点
+
+
 
 ### gdb
 
@@ -4554,6 +4569,22 @@ gzip -d xxx.gz
 
 
 # 文件
+
+
+
+## 软链接和硬链接
+
+linux链接分两种，一种被称为硬链接(hard link)，一种被称为称号链接(symbolic link)。默认情况下，ln命令产生硬链接。
+
+### 硬链接
+
+硬连接指通过索引节点来进行连接。在Linux的文件系统中，保存在磁盘分区中的文件不管是什么类型都给它分配一个编号，称为索引节点号(Inode Index)。在Linux中，多个文件名指向同一索引节点是存在的。一般这种连接就是硬连接。硬连接的作用是允许一个文件拥有多个有效路径名，这样用户就可以建立硬连接到重要文件，以防止“误删”的功能。其原因如上所述，因为对应该目录的索引节点有一个以上的连接。只删除一个连接并不影响索引节点本身和其它的连接，只有当最后一个连接被删除后，文件的数据块及目录的连接才会被释放。也就是说，文件真正删除的条件是与之相关的所有硬连接文件均被删除。
+
+### 软链接
+
+另外一种连接称之为符号连接（Symbolic Link），也叫软连接。软链接文件有类似于Windows的快捷方式。它实际上是一个特殊的文件。在符号连接中，文件实际上是一个文本文件，其中包含的有另一文件的位置信息。
+
+
 
 ## mount
 
@@ -7962,6 +7993,8 @@ docker run -it -v /home/superman/Downloads:/usr/Downloads ubuntu64 /bin/bash
 
 ```bash
 docker run -p 0.0.0.0:36022->22 -it ubuntu /bin/bash
+
+docker run -p 0.0.0.0:36022:22 -it ubuntu /bin/bash
 ```
 
 
